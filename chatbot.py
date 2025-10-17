@@ -1,3 +1,11 @@
+import random
+import discord
+import re
+from collections import deque
+
+# ======================
+# Keyword-Response Mapping
+# ======================
 responses = {
     # ===== Priority 1: Greetings =====
     r"\bhi\b|\bhello\b|\bhey\b|\byo\b|\bhiya\b|\bgreetings\b|\bwhat's up\b|\bhowdy\b": [
