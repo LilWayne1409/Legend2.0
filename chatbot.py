@@ -6,13 +6,14 @@ import re
 # Keyword-Response Mapping
 # ======================
 responses = {
-    # ===== Priority 1: Specific / Detailed =====
-    r"\bhow are you\b|\bhow's it going\b|\bwhat's up\b|\bsup\b": [
-        "I’m doing great, thanks! 😄",
-        "Pretty chill 😎, how about you?",
-        "All good! How’s your day going?",
-        "Feeling awesome today! What about you?",
-        "Doing well, thanks! What are you up to?"
+# ===== Priorität 1: Stimmung / Wie geht's =====
+r"\bhow are you(\sdoing)?\b|\bhow's it going\b|\bwhat's up\b|\bsup\b|\bhow do you do\b": [
+    "I’m doing great, thanks! 😄",
+    "Pretty chill 😎, how about you?",
+    "All good! How’s your day going?",
+    "Feeling awesome today! What about you?",
+    "I’m fine! What are you up to?"
+],
     ],
     r"\bwho are you\b|\bwhat are you\b": [
         "I’m Legend Bot 🤖",
