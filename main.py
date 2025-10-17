@@ -4,7 +4,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from rps import RPSView, RPSBo3View
 from topic import get_random_topic, ChatReviver
-from chatbot import handle_message
+from chatbot import handle_message  # dein handle_message aus chatbot.py
 
 # ==== LOAD ENV ====
 load_dotenv()
