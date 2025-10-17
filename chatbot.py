@@ -2,9 +2,29 @@ import random
 import discord
 import re
 from collections import deque
-from rps import start_rps_game  # Deine RPS-Funktion
-from topic import get_random_topic  # Funktion aus topic.py
+from rps import start_rps_game
+from topic import get_random_topic
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
+
+# ======================
+# GPT-2 KI vorbereiten
+# ======================
+tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+model = GPT2LMHeadModel.from_pretrained("gpt2")
+
+def generate_response(prompt: str) -> str:
+    """Erzeugt eine GPT-2 Antwort auf den Prompt."""
+    input_ids = tokenizer.encode(prompt, return_tensors="pt")
+    output = model.generate(
+        input_ids,
+        max_length=80,
+        num_return_sequences=1,
+        no_repeat_ngram_size=2,
+        pad_token_id=tokenizer.eos_token_id
+    )
+    response = tokenizer.decode(output[0], skip_special_tokens=True)
+    return response
+
 
 # ======================
 # Keyword-Response Mapping
@@ -250,7 +270,7 @@ responses = {
 last_messages = {}  # key = channel id, value = deque(maxlen=5)
 
 # ======================
-# Function to get response
+# Funktion, um Antwort zu generieren
 # ======================
 def get_response(message: str, channel_id: int = 0) -> str:
     msg = message.lower()
@@ -260,13 +280,14 @@ def get_response(message: str, channel_id: int = 0) -> str:
         last_messages[channel_id] = deque(maxlen=5)
     last_messages[channel_id].append(msg)
 
-    # Suche nach Keywords
+    # Suche nach passenden Keywords
     for pattern, replies in responses.items():
         if re.search(pattern, msg):
             return random.choice(replies)
 
-    # Fallback
-    return random.choice(responses[r".*"])
+    # Wenn kein Keyword passt → GPT-2-Text erzeugen
+    gpt_response = generate_response(message)
+    return gpt_response
 
 # ======================
 # Handle Discord Messages
@@ -279,36 +300,17 @@ async def handle_message(message: discord.Message):
     if message.mentions and message.guild.me in message.mentions:
         content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
 
-        # === Wenn User "yes" sagt, sage nur, welche Commands existieren ===
         if content.lower() == "yes":
             await message.reply("Type `!rps` for a normal round or `!rps_bo3` for Best of 3! 🕹️")
-            return  # Keine andere Antwort senden
+            return
 
-        # === Wenn User ein Topic will ===
         if "give me a topic" in content.lower():
             topic = get_random_topic()
             await message.reply(f"Here's a topic for you: {topic}")
             return
 
-        # Normale Keyword-Antwort
         response = get_response(content, message.channel.id)
         await message.reply(response)
-
-from transformers import GPT2LMHeadModel, GPT2Tokenizer
-
-# GPT-2 Modell & Tokenizer laden
-tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
-model = GPT2LMHeadModel.from_pretrained("gpt2")
-
-def generate_response(prompt: str) -> str:
-    """Erzeugt eine GPT-2 Antwort auf den Prompt."""
-    input_ids = tokenizer.encode(prompt, return_tensors="pt")
-    output = model.generate(
-        input_ids,
-        max_length=80,
-        num_return_sequences=1,
-        no_repeat_ngram_size=2,
-        pad_token_id=tokenizer.eos_token_id
     )
     response = tokenizer.decode(output[0], skip_special_tokens=True)
     return response
