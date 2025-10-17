@@ -4,6 +4,7 @@ import re
 from collections import deque
 from rps import start_rps_game  # Deine RPS-Funktion
 from topic import get_random_topic  # Funktion aus topic.py
+from transformers import GPT2LMHeadModel, GPT2Tokenizer
 
 # ======================
 # Keyword-Response Mapping
@@ -292,3 +293,22 @@ async def handle_message(message: discord.Message):
         # Normale Keyword-Antwort
         response = get_response(content, message.channel.id)
         await message.reply(response)
+
+from transformers import GPT2LMHeadModel, GPT2Tokenizer
+
+# GPT-2 Modell & Tokenizer laden
+tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+model = GPT2LMHeadModel.from_pretrained("gpt2")
+
+def generate_response(prompt: str) -> str:
+    """Erzeugt eine GPT-2 Antwort auf den Prompt."""
+    input_ids = tokenizer.encode(prompt, return_tensors="pt")
+    output = model.generate(
+        input_ids,
+        max_length=80,
+        num_return_sequences=1,
+        no_repeat_ngram_size=2,
+        pad_token_id=tokenizer.eos_token_id
+    )
+    response = tokenizer.decode(output[0], skip_special_tokens=True)
+    return response
