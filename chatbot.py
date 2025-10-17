@@ -2,12 +2,13 @@ import random
 import discord
 import re
 from collections import deque
+from rps import start_rps_game  # Stelle sicher, dass deine rps.py diese Funktion hat
 
 # ======================
 # Keyword-Response Mapping
 # ======================
 responses = {
-    # ===== Greetings =====
+    # ===== Priority 1: Greetings =====
     r"\bhi\b|\bhello\b|\bhey\b|\byo\b|\bhiya\b|\bgreetings\b|\bwhat's up\b|\bhowdy\b": [
         "Hey there! 👋",
         "Hello! How’s it going?",
@@ -21,7 +22,7 @@ responses = {
         "Yo! Long time no see!"
     ] * 20,
 
-    # ===== Mood / Feelings =====
+    # ===== Priority 2: Mood / Feelings =====
     r"\bhow are you(\sdoing)?\b|\bhow's it going\b|\bwhat's up\b|\bsup\b|\bhow do you do\b|\bhow r u\b": [
         "I’m doing great, thanks! 😄",
         "Pretty chill 😎, how about you?",
@@ -35,7 +36,7 @@ responses = {
         "Hey! I’m having a nice day here."
     ] * 20,
 
-    # ===== Hobbies & Activities =====
+    # ===== Priority 3: Hobbies & Activities =====
     r"\bwhat are you doing\b|\bwhatcha doing\b|\bfree time\b|\bhobbies\b|\bwhat do you do\b|\bwhat's up\b": [
         "Just hanging out here 😎",
         "Waiting for your messages! 😁",
@@ -49,7 +50,7 @@ responses = {
         "Just scrolling and chatting! 😄"
     ] * 20,
 
-    # ===== Favorites =====
+    # ===== Priority 4: Favorites =====
     r"\bwhat's your favorite color\b|\bfavorite color\b|\bwhat's your favorite food\b|\bfavorite food\b|\bwhat's your favorite movie\b|\bfavorite movie\b|\bwhat's your favorite game\b|\bfavorite game\b": [
         "I love neon blue and purple! 💜💙",
         "Pizza is always a good choice 🍕",
@@ -63,24 +64,26 @@ responses = {
         "Comedies always make me laugh 😄"
     ] * 20,
 
-    # ===== Games / Fun =====
+    # ===== Priority 5: Games / Fun =====
     r"\bwanna play\b|\bgame\b|\bplay something\b|\brps\b|\bchallenge\b": [
-        "Do you want to play Rock Paper Scissors? 🤔 (answer 'yes' to start)",
-        "I can challenge you to a game! Say 'yes' if you’re ready 😏",
-        "Fancy a quick game? Reply 'yes' to begin!",
-        "Shall we play? Type 'yes' to start the fun!"
-    ] * 20,
+        "Do you want to play Rock Paper Scissors? Answer 'yes' to start!"
+    ],
 
-    # ===== Help / Commands =====
+    # ===== Priority 6: Help / Commands =====
     r"\bcan you help me\b|\bhelp\b|\bwhat can i do\b|\binstructions\b|\bguide\b": [
         "Sure! You can try commands like !topic or !rps 🎲",
         "Of course! Ask me anything, I’ll try to answer 😄",
         "Absolutely! I can start a game, give a topic, or just chat!",
         "Yep! You can ping me or play a game like Rock Paper Scissors!",
-        "Need help? I’m here for you! 😊"
+        "Need help? I’m here for you! 😊",
+        "I can explain commands if you want!",
+        "Ask me anything, I’ll do my best to answer!",
+        "Commands like !topic, !rps, or !info work great!",
+        "I’m happy to guide you around the server!",
+        "Need a tip? Just ask!"
     ] * 20,
 
-    # ===== Smalltalk / Reactions =====
+    # ===== Priority 7: Smalltalk / Reactions =====
     r"\blol\b|\bhaha\b|\blmao\b|\bfunny\b|\bamazing\b|\bcool\b|\bwow\b|\bnice\b|\bgreat\b": [
         "Haha, that’s funny 😄",
         "Lmao, totally!",
@@ -94,16 +97,21 @@ responses = {
         "Interesting point!"
     ] * 20,
 
-    # ===== Trivia / Fun =====
+    # ===== Priority 8: Trivia / Fun =====
     r"\btell me a joke\b|\banother joke\b|\btell me an interesting fact\b|\binteresting fact\b": [
         "Why did the scarecrow win an award? Because he was outstanding in his field! 🌾",
         "I read a fun fact: Honey never spoils! 🍯",
         "Why don’t scientists trust atoms? Because they make up everything! 😆",
         "Fun fact: Octopuses have three hearts! 🐙",
-        "Joke time! What do you call fake spaghetti? An impasta! 🍝"
+        "Joke time! What do you call fake spaghetti? An impasta! 🍝",
+        "Did you know? Bananas are berries! 🍌",
+        "Why did the math book look sad? Because it had too many problems! 📚",
+        "Here’s a random fact: A group of flamingos is called a flamboyance! 🦩",
+        "Why did the computer go to the doctor? It caught a virus! 💻",
+        "Fun fact: Sloths can hold their breath longer than dolphins! 🦥"
     ] * 20,
 
-    # ===== Greetings / Tageszeit =====
+    # ===== Priority 9: Greetings / Tageszeit =====
     r"\bgood morning\b|\bmorning\b": [
         "Good morning! ☀️ Ready for a great day?",
         "Morning! How’s it going so far?",
@@ -116,7 +124,7 @@ responses = {
         "Nighty night! See you tomorrow! 🛌"
     ],
 
-    # ===== Fallback =====
+    # ===== Priority 10: Fallback =====
     r".*": [
         "Hmm… I didn't quite get that 🤔",
         "Interesting 😄",
@@ -132,27 +140,27 @@ responses = {
 }
 
 # ======================
-# Pending RPS Games
+# Store last messages per channel for context
+# ======================
+last_messages = {}  # key = channel id, value = deque of last 5 messages
+
+# ======================
+# Pending RPS games
 # ======================
 pending_rps = {}  # user_id: True
 
 # ======================
-# Context Storage
-# ======================
-last_messages = {}  # channel_id: deque of last 5 messages
-
-# ======================
-# Get response function
+# Function to get response
 # ======================
 def get_response(message: str, channel_id: int = 0) -> str:
     msg = message.lower()
 
-    # Store context
+    # Kontext speichern
     if channel_id not in last_messages:
         last_messages[channel_id] = deque(maxlen=5)
     last_messages[channel_id].append(msg)
 
-    # Check for pending RPS
+    # Suche nach Keywords
     for pattern, replies in responses.items():
         if re.search(pattern, msg):
             return random.choice(replies)
@@ -161,30 +169,19 @@ def get_response(message: str, channel_id: int = 0) -> str:
     return random.choice(responses[r".*"])
 
 # ======================
-# Start RPS Game
-# ======================
-async def start_rps_game(message: discord.Message):
-    choices = ["rock", "paper", "scissors"]
-    bot_choice = random.choice(choices)
-
-    await message.reply(f"I choose {bot_choice}! Now it’s your turn. Type rock, paper, or scissors.")
-
-# ======================
 # Handle Discord Messages
 # ======================
 async def handle_message(message: discord.Message):
     if message.author.bot:
         return
 
-    # Only respond if bot mentioned
     if message.mentions and message.guild.me in message.mentions:
-        # Remove mention
         content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
         user_id = message.author.id
 
-        # Check pending RPS
+        # --- 1. Wenn User 'yes' sagt und RPS aussteht ---
         if user_id in pending_rps:
-            if content.lower() in ["yes", "y"]:
+            if content.lower() in ["yes", "sure"]:
                 await start_rps_game(message)
                 del pending_rps[user_id]
                 return
@@ -193,12 +190,12 @@ async def handle_message(message: discord.Message):
                 del pending_rps[user_id]
                 return
 
-        # Check if message is asking to play
-        if re.search(r"\bwanna play\b|\bgame\b|\bplay something\b|\brps\b|\bchallenge\b", content.lower()):
-            pending_rps[user_id] = True
-            await message.reply("Do you want to play Rock Paper Scissors? Answer 'yes' to start!")
-            return
-
-        # Normal response
-        response = get_response(content, message.channel.id)
-        await message.reply(response)
+        # --- 2. Keyword-Responses ---
+        for pattern, replies in responses.items():
+            if re.search(pattern, content.lower()):
+                response = random.choice(replies)
+                await message.reply(response)
+                # Wenn es um RPS geht, setze Pending
+                if pattern == r"\bwanna play\b|\bgame\b|\bplay something\b|\brps\b|\bchallenge\b":
+                    pending_rps[user_id] = True
+                return
