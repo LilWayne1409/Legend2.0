@@ -4,11 +4,11 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from rps import RPSView, RPSBo3View
 from topic import get_random_topic
+from chatbot import get_response  # Funktion, die eine Antwort zurückgibt
 
 # ==== LOAD ENV ====
 load_dotenv()
 TOKEN = os.environ.get("TOKEN")
-CHANNEL_ID = int(os.environ.get("CHANNEL_ID", 0))
 
 if not TOKEN:
     print("❌ TOKEN not set!")
@@ -26,6 +26,24 @@ async def on_ready():
     print(f"✅ Logged in as {bot.user}")
     await bot.change_presence(activity=discord.Game(name="!info"))
 
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    # Nur reagieren, wenn Bot erwähnt wird
+    if message.guild and bot.user in message.mentions:
+        content = message.content
+        # Entferne die Erwähnung selbst aus der Nachricht
+        content = content.replace(f"<@!{bot.user.id}>", "").replace(f"<@{bot.user.id}>", "").strip()
+        
+        # Antwort über Keyword-Responder
+        response = get_response(content, message.channel.id)
+        await message.reply(response)
+
+    # Commands trotzdem ausführen
+    await bot.process_commands(message)
+
 # ==== COMMANDS ====
 @bot.command()
 async def ping(ctx):
@@ -41,21 +59,13 @@ async def topic(ctx):
 
 @bot.command()
 async def rps(ctx, opponent: discord.Member = None):
-    embed = discord.Embed(
-        title="Rock Paper Scissors",
-        description="Choose one:",
-        color=0x00ff00
-    )
+    embed = discord.Embed(title="Rock Paper Scissors", description="Choose one:", color=0x00ff00)
     view = RPSView(ctx, opponent)
     await ctx.send(embed=embed, view=view)
 
 @bot.command()
 async def rps_bo3(ctx, opponent: discord.Member = None):
-    embed = discord.Embed(
-        title="Rock Paper Scissors - Best of 3",
-        description="Choose one:",
-        color=0x00ff00
-    )
+    embed = discord.Embed(title="Rock Paper Scissors - Best of 3", description="Choose one:", color=0x00ff00)
     view = RPSBo3View(ctx, opponent)
     await ctx.send(embed=embed, view=view)
 
