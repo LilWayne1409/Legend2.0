@@ -89,6 +89,15 @@ responses = {
         "Sweet dreams! 😌",
         "Nighty night! See you tomorrow! 🛌"
     ],
+    
+        # 👋 Goodbye
+    r"\bbye\b|\bgoodbye\b|\bsee ya\b|\bsee you\b|\bcya\b|\blater\b|\bgood night\b|\bgn\b|\bnight\b": [
+        "Goodbye! 👋",
+        "See you later 👑",
+        "Take care!",
+        "Cya 👌",
+        "Bye bye Legend ✨",
+    ],
 
     # ===== Priority X: Identity / About Bot =====
     r"\bwho are you\b|\bwhat are you\b|\bintroduce yourself\b": [
