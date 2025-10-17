@@ -6,11 +6,11 @@ from rps import RPSView, RPSBo3View
 from topic import get_random_topic
 from chatbot import handle_message  # dein Keyword-Responder
 
-# ==== LOAD ENV ====
+# ==== ENV ====
 load_dotenv()
 TOKEN = os.environ.get("TOKEN")
 
-# ==== BOT SETUP ====
+# ==== INTENTS ====
 intents = discord.Intents.default()
 intents.messages = True
 intents.message_content = True
@@ -24,7 +24,6 @@ async def on_ready():
     print(f"✅ Logged in as {bot.user}")
     await bot.change_presence(activity=discord.Game(name="!info"))
 
-# ==== ON MESSAGE ====
 @bot.event
 async def on_message(message):
     if message.author.bot:
@@ -34,9 +33,9 @@ async def on_message(message):
     ctx = await bot.get_context(message)
     if ctx.valid:
         await bot.process_commands(message)
-        return  # Command → stop, handle_message nicht ausführen
+        return  # Wichtig: KEIN handle_message bei Commands
 
-    # Keyword-Responder auf normale Nachrichten
+    # Keyword-Responder reagiert nur auf Nachrichten ohne Command
     await handle_message(message)
 
 # ==== COMMANDS ====
