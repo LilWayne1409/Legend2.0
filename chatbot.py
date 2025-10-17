@@ -270,25 +270,18 @@ def get_response(message: str, channel_id: int = 0) -> str:
 # ======================
 # Handle Discord Messages
 # ======================
-async def handle_message(message: discord.Message):
+async def handle_message(message):
     if message.author.bot:
         return
 
-    # Nur reagieren, wenn @Bot erwähnt wird
-    if message.mentions and message.guild.me in message.mentions:
-        content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
+    content = message.content.strip()
 
-        # === Wenn User "yes" sagt, sage nur, welche Commands existieren ===
-        if content.lower() == "yes":
-            await message.reply("Type !rps for a normal round or !rps_bo3 for Best of 3! 🕹")
-            return  # Keine andere Antwort senden
+    # === Wenn User ein Topic will ===
+    if "give me a topic" in content.lower():
+        topic = get_random_topic()
+        await message.reply(f"Here's a topic for you: {topic}")
+        return
 
-        # === Wenn User ein Topic will ===
-        if "give me a topic" in content.lower():
-            topic = get_random_topic()
-            await message.reply(f"Here's a topic for you: {topic}")
-            return
-
-        # Normale Keyword-Antwort
-        response = get_response(content, message.channel.id)
-        await message.reply(response)
+    # Normale Keyword-Antwort
+    response = get_response(content, message.channel.id)
+    await message.reply(response)
