@@ -6,9 +6,11 @@ from rps import RPSView, RPSBo3View
 from topic import get_random_topic
 from chatbot import handle_message  # dein Keyword-Responder
 
+# ==== LOAD ENV ====
 load_dotenv()
 TOKEN = os.environ.get("TOKEN")
 
+# ==== BOT SETUP ====
 intents = discord.Intents.default()
 intents.messages = True
 intents.message_content = True
@@ -16,26 +18,28 @@ intents.guilds = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+# ==== EVENTS ====
 @bot.event
 async def on_ready():
     print(f"✅ Logged in as {bot.user}")
     await bot.change_presence(activity=discord.Game(name="!info"))
 
-# ----------- WICHTIG -----------
+# ==== ON MESSAGE ====
 @bot.event
 async def on_message(message):
     if message.author.bot:
         return
 
+    # Prüfen, ob es ein Command ist
     ctx = await bot.get_context(message)
     if ctx.valid:
         await bot.process_commands(message)
-        return  # Command-Nachricht → stop, kein handle_message
+        return  # Command → stop, handle_message nicht ausführen
 
-    # Keyword-Responder reagiert NUR auf Nachrichten, die KEIN Command sind
+    # Keyword-Responder auf normale Nachrichten
     await handle_message(message)
 
-# ---------------- COMMANDS ----------------
+# ==== COMMANDS ====
 @bot.command()
 async def ping(ctx):
     await ctx.send(f"Pong! 🏓 {round(bot.latency * 1000)}ms")
@@ -90,4 +94,5 @@ async def info(ctx):
     embed.set_footer(text="Legend Bot • Keeps Legends Active 👑")
     await ctx.send(embed=embed)
 
+# ==== RUN BOT ====
 bot.run(TOKEN)
