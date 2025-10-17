@@ -33,19 +33,16 @@ async def on_message(message):
     if message.author.bot:
         return
 
-    # Commands zuerst ausführen
-    await bot.process_commands(message)
+    # Zuerst Commands abarbeiten
+    ctx = await bot.get_context(message)
+    if ctx.valid:
+        await bot.process_commands(message)
+        return  # Stoppe hier, keine Keyword-Antwort
 
-    # Reagiere nur auf Erwähnungen, keine Commands
+    # Reagiere nur auf Erwähnungen
     if message.guild and bot.user in message.mentions:
         content = message.content
         content = content.replace(f"<@!{bot.user.id}>", "").replace(f"<@{bot.user.id}>", "").strip()
-
-        # Wenn Nachricht ein Command ist, nicht nochmal antworten
-        if content.startswith(bot.command_prefix):
-            return
-
-        # Keyword-Responder
         response = get_response(content, message.channel.id)
         await message.reply(response)
 
