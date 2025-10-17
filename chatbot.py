@@ -25,7 +25,6 @@ def generate_response(prompt: str) -> str:
     response = tokenizer.decode(output[0], skip_special_tokens=True)
     return response
 
-
 # ======================
 # Keyword-Response Mapping
 # ======================
@@ -286,8 +285,7 @@ def get_response(message: str, channel_id: int = 0) -> str:
             return random.choice(replies)
 
     # Wenn kein Keyword passt → GPT-2-Text erzeugen
-    gpt_response = generate_response(message)
-    return gpt_response
+    return generate_response(message)
 
 # ======================
 # Handle Discord Messages
@@ -311,6 +309,3 @@ async def handle_message(message: discord.Message):
 
         response = get_response(content, message.channel.id)
         await message.reply(response)
-    )
-    response = tokenizer.decode(output[0], skip_special_tokens=True)
-    return response
