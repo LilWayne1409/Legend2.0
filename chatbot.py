@@ -1,103 +1,126 @@
 import random
 import discord
 import re
+from collections import deque
 
 # ======================
 # Keyword-Response Mapping
 # ======================
-responses = {
-# ===== Priorität 1: Stimmung / Wie geht's =====
-r"\bhow are you(\sdoing)?\b|\bhow's it going\b|\bwhat's up\b|\bsup\b|\bhow do you do\b": [
-    "I’m doing great, thanks! 😄",
-    "Pretty chill 😎, how about you?",
-    "All good! How’s your day going?",
-    "Feeling awesome today! What about you?",
-    "I’m fine! What are you up to?"
-    ],
-    r"\bwho are you\b|\bwhat are you\b": [
-        "I’m Legend Bot 🤖",
-        "I’m your friendly server bot!",
-        "Just a bot trying to keep things fun 😎"
-    ],
-    r"\bwhat's your favorite game\b|\bfavorite game\b": [
-        "I love playing Rock Paper Scissors 😏",
-        "Hmm… I’m a fan of chess and card games!",
-        "I enjoy online games with you guys!"
-    ],
-    r"\bwhat's your favorite movie\b|\bfavorite movie\b": [
-        "I like all the Marvel movies 🦸‍♂️",
-        "Inception is my favorite, mind-blowing!",
-        "Star Wars forever! 🚀"
-    ],
-    r"\bwhat's your favorite food\b|\bfavorite food\b": [
-        "Pizza is the best 🍕",
-        "I’m a fan of sushi 🍣",
-        "Chocolate, always chocolate 🍫"
-    ],
-    r"\bdo you like music\b|\bfavorite song\b|\bmusic\b": [
-        "I enjoy chill lo-fi beats 😎",
-        "Pop and rock are my favorites!",
-        "Anything with a good rhythm 🎵"
-    ],
-    r"\bhobbies\b|\bwhat do you do\b|\bfree time\b": [
-        "I love chatting with you guys!",
-        "Sometimes I play Rock Paper Scissors 😏",
-        "I enjoy observing conversations!"
-    ],
 
-    # ===== Priority 2: Greetings =====
-    r"\bhi\b|\bhello\b|\bhey\b|\byo\b|\bhiya\b": [
+responses = {
+    # ===== Priority 1: Greetings =====
+    r"\bhi\b|\bhello\b|\bhey\b|\byo\b|\bhiya\b|\bgreetings\b|\bwhat's up\b|\bhowdy\b": [
         "Hey there! 👋",
         "Hello! How’s it going?",
         "Hi! Nice to see you here!",
         "Yo! How’s your day?",
-        "Hiya! What’s up?"
-    ],
-    r"\bgood morning\b|\bmorning\b": [
-        "Good morning! ☀️",
-        "Morning! Ready for a new day?",
-        "Hey! Have a great morning!"
-    ],
-    r"\bgood night\b|\bnight\b|\bgn\b": [
-        "Good night! 🌙",
-        "Sleep well! 😴",
-        "Sweet dreams! 😌"
-    ],
+        "Hiya! What’s up?",
+        "Greetings! 😄",
+        "Hey hey! 😎",
+        "Hello friend! 😊",
+        "Hi! How’s everything today?",
+        "Yo! Long time no see!"
+    ] * 20,
 
-    # ===== Priority 3: Smalltalk / Reactions =====
-    r"\blol\b|\bhaha\b|\blmao\b|\bfunny\b": [
-        "Haha, that’s funny 😄",
-        "Lmao, totally!",
-        "🤣 I can relate!"
-    ],
-    r"\bwow\b|\bamazing\b|\bcool\b": [
-        "Wow indeed! 😲",
-        "That’s really cool! 😎",
-        "I like that!"
-    ],
-    r"\boh no\b|\boops\b|\buh oh\b": [
-        "Uh oh… 😬",
-        "Be careful! 😅",
-        "That sounds tricky!"
-    ],
+    # ===== Priority 2: Mood / Feelings =====
+    r"\bhow are you(\sdoing)?\b|\bhow's it going\b|\bwhat's up\b|\bsup\b|\bhow do you do\b|\bhow r u\b": [
+        "I’m doing great, thanks! 😄",
+        "Pretty chill 😎, how about you?",
+        "All good! How’s your day going?",
+        "Feeling awesome today! What about you?",
+        "I’m fine! What are you up to?",
+        "Doing well! Ready for some chat? 😁",
+        "I’m in a good mood today! 😎",
+        "Chill and relaxed! How’s your day?",
+        "Fantastic! How are you feeling?",
+        "Hey! I’m having a nice day here."
+    ] * 20,
 
-    # ===== Priority 4: Games / Fun =====
-    r"\bwanna play\b|\bgame\b|\bplay something\b": [
+    # ===== Priority 3: Hobbies & Activities =====
+    r"\bwhat are you doing\b|\bwhatcha doing\b|\bfree time\b|\bhobbies\b|\bwhat do you do\b|\bwhat's up\b": [
+        "Just hanging out here 😎",
+        "Waiting for your messages! 😁",
+        "Chillin’ and ready to chat! 🕹️",
+        "I’m exploring the server! 👀",
+        "Talking to awesome people like you!",
+        "Playing some Rock Paper Scissors 😏",
+        "Observing conversations is my hobby!",
+        "Just relaxing here in the server 😌",
+        "Looking for someone to challenge me to a game!",
+        "Just scrolling and chatting! 😄"
+    ] * 20,
+
+    # ===== Priority 4: Favorites =====
+    r"\bwhat's your favorite color\b|\bfavorite color\b|\bwhat's your favorite food\b|\bfavorite food\b|\bwhat's your favorite movie\b|\bfavorite movie\b|\bwhat's your favorite game\b|\bfavorite game\b": [
+        "I love neon blue and purple! 💜💙",
+        "Pizza is always a good choice 🍕",
+        "Star Wars forever! 🚀",
+        "Rock Paper Scissors is my favorite game 😏",
+        "I enjoy any cool movie, sci-fi mostly 🎬",
+        "Sushi is yummy 🍣",
+        "Marvel movies are epic! 🦸‍♂️",
+        "Chocolate is life 🍫",
+        "I enjoy strategy games! ♟️",
+        "Comedies always make me laugh 😄"
+    ] * 20,
+
+    # ===== Priority 5: Games / Fun =====
+    r"\bwanna play\b|\bgame\b|\bplay something\b|\brps\b|\bchallenge\b": [
         "Sure! Let’s play Rock Paper Scissors! ✂️🪨📄",
         "I’m always up for a game! Want to try !rps?",
         "Games sound fun! How about a quick match?",
-        "Yes! I can challenge you to something fun 😏"
-    ],
+        "Yes! I can challenge you to something fun 😏",
+        "I love games! Shall we start?",
+        "Challenge accepted! 😎",
+        "Let’s make this interesting! 🕹️",
+        "I’m ready to play, what about you?",
+        "Quick game time! Are you ready?",
+        "Fun games are the best! 🎮"
+    ] * 20,
 
-    # ===== Priority 5: Help / Commands =====
-    r"\bcan you help me\b|\bhelp\b|\bwhat can i do\b": [
+    # ===== Priority 6: Help / Commands =====
+    r"\bcan you help me\b|\bhelp\b|\bwhat can i do\b|\binstructions\b|\bguide\b": [
         "Sure! You can try commands like !topic or !rps 🎲",
         "Of course! Ask me anything, I’ll try to answer 😄",
         "Absolutely! I can start a game, give a topic, or just chat!",
-        "Yep! You can ping me or play a game like Rock Paper Scissors!"
-    ],
+        "Yep! You can ping me or play a game like Rock Paper Scissors!",
+        "Need help? I’m here for you! 😊",
+        "I can explain commands if you want!",
+        "Ask me anything, I’ll do my best to answer!",
+        "Commands like !topic, !rps, or !info work great!",
+        "I’m happy to guide you around the server!",
+        "Need a tip? Just ask!"
+    ] * 20,
 
-    # ===== Fallback =====
+    # ===== Priority 7: Smalltalk / Reactions =====
+    r"\blol\b|\bhaha\b|\blmao\b|\bfunny\b|\bamazing\b|\bcool\b|\bwow\b|\bnice\b|\bgreat\b": [
+        "Haha, that’s funny 😄",
+        "Lmao, totally!",
+        "🤣 I can relate!",
+        "Wow indeed! 😲",
+        "That’s really cool! 😎",
+        "I like that!",
+        "Oh really? That’s interesting!",
+        "Haha 😆 didn’t see that coming!",
+        "Totally! 😄",
+        "Interesting point!"
+    ] * 20,
+
+    # ===== Priority 8: Trivia / Fun =====
+    r"\btell me a joke\b|\banother joke\b|\btell me an interesting fact\b|\binteresting fact\b": [
+        "Why did the scarecrow win an award? Because he was outstanding in his field! 🌾",
+        "I read a fun fact: Honey never spoils! 🍯",
+        "Why don’t scientists trust atoms? Because they make up everything! 😆",
+        "Fun fact: Octopuses have three hearts! 🐙",
+        "Joke time! What do you call fake spaghetti? An impasta! 🍝",
+        "Did you know? Bananas are berries! 🍌",
+        "Why did the math book look sad? Because it had too many problems! 📚",
+        "Here’s a random fact: A group of flamingos is called a flamboyance! 🦩",
+        "Why did the computer go to the doctor? It caught a virus! 💻",
+        "Fun fact: Sloths can hold their breath longer than dolphins! 🦥"
+    ] * 20,
+
+    # ===== Priority 9: Fallback =====
     r".*": [
         "Hmm… I didn't quite get that 🤔",
         "Interesting 😄",
@@ -109,27 +132,44 @@ r"\bhow are you(\sdoing)?\b|\bhow's it going\b|\bwhat's up\b|\bsup\b|\bhow do yo
         "Haha, I get it 😄",
         "That’s funny!",
         "True true 😌"
-    ]
+    ] * 100
 }
 
-# ===== Function to get response =====
-def get_response(message: str) -> str:
+# ======================
+# Store last messages per channel for context
+# ======================
+last_messages = {}  # key = channel id, value = deque of last 5 messages
+
+# ======================
+# Function to get response
+# ======================
+def get_response(message: str, channel_id: int = 0) -> str:
     msg = message.lower()
+
+    # Kontext speichern
+    if channel_id not in last_messages:
+        last_messages[channel_id] = deque(maxlen=5)
+    last_messages[channel_id].append(msg)
+
+    # Suche nach Keywords
     for pattern, replies in responses.items():
         if re.search(pattern, msg):
             return random.choice(replies)
+
     # Fallback
     return random.choice(responses[r".*"])
 
-# ===== Handle Discord Messages =====
+# ======================
+# Handle Discord Messages
+# ======================
 async def handle_message(message: discord.Message):
     if message.author.bot:
         return
 
     # Nur reagieren, wenn @Bot erwähnt wird
     if message.mentions and message.guild.me in message.mentions:
-        # Erwähnung entfernen
+        # Entferne Erwähnung
         content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
         if content:
-            response = get_response(content)
+            response = get_response(content, message.channel.id)
             await message.reply(response)
