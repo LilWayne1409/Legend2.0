@@ -120,6 +120,20 @@ responses = {
         "Fun fact: Sloths can hold their breath longer than dolphins! 🦥"
     ] * 20,
 
+# ===== Priority 1: Greetings / Tageszeit =====
+r"\bgood morning\b|\bmorning\b": [
+    "Good morning! ☀️ Ready for a great day?",
+    "Morning! How’s it going so far?",
+    "Hey! Have an awesome morning! 😄",
+    "Good morning! Did you sleep well?"
+]
+
+r"\bgood night\b|\bnight\b|\bgn\b": [
+    "Good night! 🌙 Sleep tight!",
+    "Sweet dreams! 😌",
+    "Nighty night! See you tomorrow! 🛌"
+]
+
     # ===== Priority 9: Fallback =====
     r".*": [
         "Hmm… I didn't quite get that 🤔",
