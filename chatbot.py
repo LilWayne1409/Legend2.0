@@ -13,7 +13,6 @@ r"\bhow are you(\sdoing)?\b|\bhow's it going\b|\bwhat's up\b|\bsup\b|\bhow do yo
     "All good! How’s your day going?",
     "Feeling awesome today! What about you?",
     "I’m fine! What are you up to?"
-],
     ],
     r"\bwho are you\b|\bwhat are you\b": [
         "I’m Legend Bot 🤖",
