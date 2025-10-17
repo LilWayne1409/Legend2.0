@@ -1,146 +1,153 @@
 import random
 import discord
-import re
-from collections import deque
-from rps import start_rps_game  # Deine RPS-Funktion
+from discord.ui import View, Button
 
-# ======================
-# Keyword-Response Mapping
-# ======================
-responses = {
-    # ===== Priority 1: Greetings =====
-    r"\bhi\b|\bhello\b|\bhey\b|\byo\b|\bhiya\b|\bgreetings\b|\bwhat's up\b|\bhowdy\b": [
-        "Hey there! 👋",
-        "Hello! How’s it going?",
-        "Hi! Nice to see you here!",
-        "Yo! How’s your day?",
-        "Hiya! What’s up?",
-        "Greetings! 😄",
-        "Hey hey! 😎",
-        "Hello friend! 😊"
-    ] * 20,
-
-    # ===== Priority 2: Mood / Feelings =====
-    r"\bhow are you(\sdoing)?\b|\bhow's it going\b|\bwhat's up\b|\bsup\b|\bhow do you do\b|\bhow r u\b": [
-        "I’m doing great, thanks! 😄 How about you?",
-        "Pretty chill 😎, how about you?",
-        "All good! How’s your day going?",
-        "Feeling awesome today! What about you?",
-        "I’m fine! What are you up to?",
-        "Doing well! Ready for some chat? 😁"
-    ] * 20,
-
-    r"\bfeel good\b|\bhappy\b|\bexcited\b|\blucky\b": [
-        "That’s awesome! 😄",
-        "Glad to hear that! Keep it up! 🌟",
-        "Happy vibes! ✨",
-        "Nice! What’s making you feel good today?"
-    ] * 20,
-
-    r"\bbored\b|\btired\b|\blonely\b|\bsad\b": [
-    "Oh no! 😢 How about a game to cheer you up? Type `!rps` for a normal round or `!rps_bo3` for Best of 3! 🕹️",
-    "Maybe a game will help! 😏 Use `!rps` or `!rps_bo3` and we can start right away!",
-    "I'm here to cheer you up! Want to play a round of Rock Paper Scissors? `!rps` or `!rps_bo3`",
-    "Cheer up! 😄 Let's play! Type `!rps` for a simple round or `!rps_bo3` for Best of 3!"
-] * 20,
-
-    # ===== Priority 3: Games / Fun =====
-    r"\bwanna play\b|\bgame\b|\bplay something\b|\brps\b|\bchallenge\b": [
-        "I’d love to play! 😄 Use `!rps` for a normal round or `!rps_bo3` for Best of 3!",
-        "Games sound fun! Just type `!rps` or `!rps_bo3` to start!",
-        "Ready to challenge me? 😏 Use `!rps` or `!rps_bo3`!",
-        "I can’t start the game here 😅, but type `!rps` or `!rps_bo3`!"
-    ] * 20,
-
-    # ===== Priority 4: Help / Commands =====
-    r"\bcan you help me\b|\bhelp\b|\bwhat can i do\b|\binstructions\b|\bguide\b": [
-        "Sure! Try commands like `!topic`, `!rps`, or `!rps_bo3` 🎲",
-        "I can explain commands if you want! 😄",
-        "Ask me anything, I’ll do my best to answer!",
-        "Commands like `!topic`, `!rps`, or `!info` work great!"
-    ] * 20,
-
-    # ===== Priority 5: Smalltalk / Reactions =====
-    r"\blol\b|\bhaha\b|\blmao\b|\bfunny\b|\bamazing\b|\bcool\b|\bwow\b|\bnice\b|\bgreat\b": [
-        "Haha, that’s funny 😄",
-        "Lmao, totally!",
-        "🤣 I can relate!",
-        "Wow indeed! 😲",
-        "That’s really cool! 😎"
-    ] * 20,
-
-    # ===== Priority 6: Trivia / Fun =====
-    r"\btell me a joke\b|\banother joke\b|\btell me an interesting fact\b|\binteresting fact\b": [
-        "Why did the scarecrow win an award? Because he was outstanding in his field! 🌾",
-        "Fun fact: Octopuses have three hearts! 🐙",
-        "Did you know? Bananas are berries! 🍌",
-        "Why don’t scientists trust atoms? Because they make up everything! 😆"
-    ] * 20,
-
-    # ===== Priority 7: Greetings / Tageszeit =====
-    r"\bgood morning\b|\bmorning\b": [
-        "Good morning! ☀️ Ready for a great day?",
-        "Morning! How’s it going so far?",
-        "Hey! Have an awesome morning! 😄"
-    ],
-    r"\bgood night\b|\bnight\b|\bgn\b": [
-        "Good night! 🌙 Sleep tight!",
-        "Sweet dreams! 😌",
-        "Nighty night! See you tomorrow! 🛌"
-    ],
-
-    # ===== Priority 8: Fallback =====
-    r".*": [
-        "Hmm… I didn't quite get that 🤔",
-        "Interesting 😄",
-        "Tell me more 👀",
-        "Sounds exciting!",
-        "Oh really? That’s cool!",
-        "Can you elaborate a bit?",
-        "Haha, I get it 😄"
-    ] * 50
+CHOICES = {
+    "Rock": "🪨",
+    "Paper": "📄",
+    "Scissors": "✂️"
 }
 
-# ======================
-# Store last messages per channel for context
-# ======================
-last_messages = {}  # key = channel id, value = deque(maxlen=5)
+# =====================
+# Single Round RPS
+# =====================
+class RPSView(View):
+    def __init__(self, ctx, timeout=30):
+        super().__init__(timeout=timeout)
+        self.ctx = ctx
+        self.user_choice = None
+        for choice in CHOICES:
+            self.add_item(RPSButton(choice, self))
 
-# ======================
-# Function to get response
-# ======================
-def get_response(message: str, channel_id: int = 0) -> str:
-    msg = message.lower()
+    async def end_game(self, user_choice):
+        self.user_choice = user_choice
+        bot_choice = random.choice(list(CHOICES.keys()))
+        wins = {"Rock": "Scissors", "Paper": "Rock", "Scissors": "Paper"}
 
-    # Kontext speichern
-    if channel_id not in last_messages:
-        last_messages[channel_id] = deque(maxlen=5)
-    last_messages[channel_id].append(msg)
+        if user_choice == bot_choice:
+            result = "Tie!"
+        elif wins[user_choice] == bot_choice:
+            result = f"{self.ctx.author.mention} wins!"
+        else:
+            result = "Bot wins!"
 
-    # Suche nach Keywords
-    for pattern, replies in responses.items():
-        if re.search(pattern, msg):
-            return random.choice(replies)
+        embed = discord.Embed(
+            title="🕹️ Rock Paper Scissors",
+            description=f"{self.ctx.author.mention} chose {user_choice}\n"
+                        f"Bot chose {bot_choice}\n\n"
+                        f"**{result}**",
+            color=discord.Color.blurple()
+        )
+        await self.ctx.channel.send(embed=embed)
+        self.stop()
 
-    # Fallback
-    return random.choice(responses[r".*"])
 
-# ======================
-# Handle Discord Messages
-# ======================
-async def handle_message(message: discord.Message):
-    if message.author.bot:
-        return
+class RPSButton(Button):
+    def __init__(self, label, parent_view):
+        super().__init__(label=label, style=discord.ButtonStyle.primary)
+        self.parent_view = parent_view
 
-    # Nur reagieren, wenn @Bot erwähnt wird
-    if message.mentions and message.guild.me in message.mentions:
-        content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
+    async def callback(self, interaction: discord.Interaction):
+        user = interaction.user
+        if user != self.parent_view.ctx.author:
+            await interaction.response.send_message("❌ You cannot play this game!", ephemeral=True)
+            return
+        await interaction.response.defer()
+        await self.parent_view.end_game(self.label)
 
-        # === Wenn User "yes" sagt, sage nur, welche Commands existieren ===
-        if content.lower() == "yes":
-            await message.reply("Type `!rps` for a normal round or `!rps_bo3` for Best of 3! 🕹️")
-            return  # Keine andere Antwort senden
 
-        # Normale Keyword-Antwort
-        response = get_response(content, message.channel.id)
-        await message.reply(response)
+# =====================
+# Best of 3 RPS
+# =====================
+class RPSBo3View(View):
+    def __init__(self, ctx, timeout=30):
+        super().__init__(timeout=timeout)
+        self.ctx = ctx
+        self.player = ctx.author
+        self.bot = ctx.bot.user
+        self.scores = {self.player: 0, self.bot: 0}
+        self.round = 1
+        self.max_rounds = 3
+        self.choices_this_round = {}
+        self.setup_buttons()
+
+    def setup_buttons(self):
+        self.clear_items()
+        for choice in CHOICES:
+            self.add_item(RPSBo3Button(choice, self))
+
+    async def round_result(self):
+        p_choice = self.choices_this_round[self.player]
+        b_choice = self.choices_this_round.get(self.bot, random.choice(list(CHOICES.keys())))
+        wins = {"Rock": "Scissors", "Paper": "Rock", "Scissors": "Paper"}
+
+        if p_choice == b_choice:
+            result_text = "Tie!"
+        elif wins[p_choice] == b_choice:
+            result_text = f"{self.player.mention} wins this round!"
+            self.scores[self.player] += 1
+        else:
+            result_text = f"Bot wins this round!"
+            self.scores[self.bot] += 1
+
+        embed = discord.Embed(
+            title=f"Round {self.round} Result",
+            description=f"{self.player.mention} chose {p_choice}\nBot chose {b_choice}\n\n**{result_text}**\n\n"
+                        f"Score: {self.scores[self.player]} - {self.scores[self.bot]}",
+            color=discord.Color.blurple()
+        )
+        await self.ctx.channel.send(embed=embed)
+
+        self.round += 1
+        self.choices_this_round = {}
+        if self.round > self.max_rounds or max(self.scores.values()) > self.max_rounds // 2:
+            # End result
+            if self.scores[self.player] == self.scores[self.bot]:
+                final_text = f"🎯 Tie! Both scored {self.scores[self.player]} points!"
+            else:
+                winner = self.player if self.scores[self.player] > self.scores[self.bot] else "Bot"
+                final_text = f"🏆 {winner if winner=='Bot' else winner.mention} wins the match!\nScore: {self.scores[self.player]} - {self.scores[self.bot]}"
+            final_embed = discord.Embed(title="RPS Best of 3 - Final Result", description=final_text, color=discord.Color.gold())
+            await self.ctx.channel.send(embed=final_embed)
+            self.stop()
+        else:
+            embed = discord.Embed(title=f"Round {self.round} - Rock Paper Scissors", description="Choose one:", color=discord.Color.blurple())
+            await self.ctx.channel.send(embed=embed, view=self)
+            self.setup_buttons()
+
+
+class RPSBo3Button(Button):
+    def __init__(self, label, parent_view):
+        super().__init__(label=label, style=discord.ButtonStyle.primary)
+        self.parent_view = parent_view
+
+    async def callback(self, interaction: discord.Interaction):
+        user = interaction.user
+        if user != self.parent_view.player:
+            await interaction.response.send_message("❌ You cannot play this game!", ephemeral=True)
+            return
+        if user in self.parent_view.choices_this_round:
+            await interaction.response.send_message("⚠️ You already chose!", ephemeral=True)
+            return
+
+        self.parent_view.choices_this_round[user] = self.label
+        await interaction.response.defer()
+
+        # Bot wählt automatisch
+        if self.parent_view.bot not in self.parent_view.choices_this_round:
+            self.parent_view.choices_this_round[self.parent_view.bot] = random.choice(list(CHOICES.keys()))
+
+        if all(player in self.parent_view.choices_this_round for player in [self.parent_view.player, self.parent_view.bot]):
+            await self.parent_view.round_result()
+
+
+# =====================
+# Start function
+# =====================
+async def start_rps_game(message: discord.Message, best_of_3=False):
+    if best_of_3:
+        view = RPSBo3View(message)
+    else:
+        view = RPSView(message)
+    embed = discord.Embed(title="🕹️ Rock Paper Scissors", description="Choose one:", color=discord.Color.blurple())
+    await message.channel.send(embed=embed, view=view)
