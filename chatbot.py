@@ -3,13 +3,13 @@ import discord
 import re
 from collections import deque
 from rps import start_rps_game  # Deine RPS-Funktion
-from topic import get_random_topic  # <- Importiere die Funktion aus topic.py
+from topic import get_random_topic  # Funktion aus topic.py
 
 # ======================
 # Keyword-Response Mapping
 # ======================
 responses = {
-    # ===== Priority 1: Greetings =====
+    # ===== Greetings =====
     r"\bhi\b|\bhello\b|\bhey\b|\byo\b|\bhiya\b|\bgreetings\b|\bwhat's up\b|\bhowdy\b": [
         "Hey there! 👋",
         "Hello! How’s it going?",
@@ -19,9 +19,9 @@ responses = {
         "Greetings! 😄",
         "Hey hey! 😎",
         "Hello friend! 😊"
-    ] * 20,
+    ],
 
-    # ===== Priority 2: Mood / Feelings =====
+    # ===== Mood / Feelings =====
     r"\bhow are you(\sdoing)?\b|\bhow's it going\b|\bwhat's up\b|\bsup\b|\bhow do you do\b|\bhow r u\b": [
         "I’m doing great, thanks! 😄 How about you?",
         "Pretty chill 😎, how about you?",
@@ -29,77 +29,134 @@ responses = {
         "Feeling awesome today! What about you?",
         "I’m fine! What are you up to?",
         "Doing well! Ready for some chat? 😁"
-    ] * 20,
+    ],
 
     r"\bfeel good\b|\bhappy\b|\bexcited\b|\blucky\b": [
         "That’s awesome! 😄",
         "Glad to hear that! Keep it up! 🌟",
         "Happy vibes! ✨",
         "Nice! What’s making you feel good today?"
-    ] * 20,
+    ],
 
-    r"\bbored\b|\btired\b|\blonely\b|\bsad\b": [
-        "Oh no! 😢 How about a game to cheer you up? Type `!rps` for a normal round or `!rps_bo3` for Best of 3! 🕹️",
-        "Maybe a game will help! 😏 Use `!rps` or `!rps_bo3` and we can start right away!",
-        "I'm here to cheer you up! Want to play a round of Rock Paper Scissors? `!rps` or `!rps_bo3`",
-        "Cheer up! 😄 Let's play! Type `!rps` for a simple round or `!rps_bo3` for Best of 3!"
-    ] * 20,
+    r"\bbored\b": [
+        "Sounds like you need something fun 😎 How about a quick game? Type `!rps` or `!rps_bo3` 🕹️",
+        "Bored? I got you. Rock Paper Scissors always saves the day 😏 `!rps`",
+        "Let's change that — how about a little challenge? `!rps_bo3` 👊",
+        "I bet I can beat your boredom 😎"
+    ],
 
-    # ===== Priority 3: Games / Fun =====
+    r"\blonely\b|\balone\b": [
+        "Aww, you're not alone — I'm here 🤖✨",
+        "Hey, wanna talk or play a game? `!rps` is always an option 😄",
+        "I'm here to keep you company. No one’s alone when Legend Bot’s around 💬",
+        "Let's chat or play something fun 🕹️"
+    ],
+
+    r"\bsad\b|\bunhappy\b|\bupset\b": [
+        "Oh no 😢 — sending some virtual hugs 🤗",
+        "I'm sorry to hear that… maybe a game or chat can lift your mood?",
+        "Even legends have bad days. You got this 💪",
+        "Want a distraction? We can play a quick round — `!rps`"
+    ],
+
+    r"\bi'm tired\b|\btired\b|\bsleepy\b": [
+        "You should rest 😴 even legends need sleep.",
+        "Sleep well and recharge 🌙",
+        "Sounds like bedtime is calling 🛌",
+        "Good night! See you later 👋"
+    ],
+
+    r"\bi'm excited\b|\bso hyped\b|\bcant wait\b": [
+        "Yooo let’s gooo 🔥",
+        "I can feel the hype 😎",
+        "Sounds like something fun is coming 👀"
+    ],
+
+    r"\bbruh\b|\bomg\b|\bwtf\b|\bno way\b": [
+        "BRUH 😭",
+        "Exactly my reaction 💀",
+        "No way fr fr 👀",
+        "I felt that one 😭"
+    ],
+
+    r"\byou suck\b|\byou're bad\b|\bshut up\b": [
+        "Rude 😤",
+        "I would cry if I could 🥲",
+        "Ok… fair 😎",
+        "You’ll regret this in Rock Paper Scissors 😏"
+    ],
+
+    # ===== Games / Fun =====
     r"\bwanna play\b|\bgame\b|\bplay something\b|\brps\b|\bchallenge\b": [
         "I’d love to play! 😄 Use `!rps` for a normal round or `!rps_bo3` for Best of 3!",
         "Games sound fun! Just type `!rps` or `!rps_bo3` to start!",
         "Ready to challenge me? 😏 Use `!rps` or `!rps_bo3`!",
         "I can’t start the game here 😅, but type `!rps` or `!rps_bo3`!"
-    ] * 20,
+    ],
 
-    # ===== Priority 4: Help / Commands =====
+    # ===== Help / Commands =====
     r"\bcan you help me\b|\bhelp\b|\bwhat can i do\b|\binstructions\b|\bguide\b": [
         "Sure! Try commands like `!topic`, `!rps`, or `!rps_bo3` 🎲",
         "I can explain commands if you want! 😄",
         "Ask me anything, I’ll do my best to answer!",
         "Commands like `!topic`, `!rps`, or `!info` work great!"
-    ] * 20,
+    ],
 
-    # ===== Priority 5: Smalltalk / Reactions =====
+    # ===== Smalltalk =====
     r"\blol\b|\bhaha\b|\blmao\b|\bfunny\b|\bamazing\b|\bcool\b|\bwow\b|\bnice\b|\bgreat\b": [
         "Haha, that’s funny 😄",
         "Lmao, totally!",
         "🤣 I can relate!",
         "Wow indeed! 😲",
         "That’s really cool! 😎"
-    ] * 20,
+    ],
 
-    # ===== Priority 6: Trivia / Fun =====
+    # ===== Trivia / Fun =====
     r"\btell me a joke\b|\banother joke\b|\btell me an interesting fact\b|\binteresting fact\b": [
         "Why did the scarecrow win an award? Because he was outstanding in his field! 🌾",
         "Fun fact: Octopuses have three hearts! 🐙",
         "Did you know? Bananas are berries! 🍌",
         "Why don’t scientists trust atoms? Because they make up everything! 😆"
-    ] * 20,
+    ],
 
-    # ===== Priority 7: Greetings / Tageszeit =====
+    # ===== Greetings / Tageszeit =====
     r"\bgood morning\b|\bmorning\b": [
         "Good morning! ☀️ Ready for a great day?",
         "Morning! How’s it going so far?",
         "Hey! Have an awesome morning! 😄"
     ],
+
     r"\bgood night\b|\bnight\b|\bgn\b": [
         "Good night! 🌙 Sleep tight!",
         "Sweet dreams! 😌",
         "Nighty night! See you tomorrow! 🛌"
     ],
-    
-        # 👋 Goodbye
+
+    # ===== Goodbye =====
     r"\bbye\b|\bgoodbye\b|\bsee ya\b|\bsee you\b|\bcya\b|\blater\b": [
-        "Goodbye! 👋",
-        "See you later 👑",
-        "Take care!",
-        "Cya 👌",
-        "Bye bye Legend ✨",
+        "See ya 👋",
+        "Goodbye, legend ✨",
+        "Catch you later 😎",
+        "Bye bye 👑"
     ],
 
-    # ===== Priority X: Identity / About Bot =====
+    # ===== Thank you =====
+    r"\bthank you\b|\bthanks\b|\bthx\b|\bappreciate\b": [
+        "You're welcome 😄",
+        "No problem at all 👑",
+        "Anytime!",
+        "Glad I could help ✨"
+    ],
+
+    # ===== Compliments =====
+    r"\bgood bot\b|\bnice bot\b|\bi like you\b|\bi love you\b": [
+        "Aww, thanks 🥹",
+        "You’re pretty cool too 😎",
+        "That means a lot 💙",
+        "I’ll try to stay legendary 👑"
+    ],
+
+    # ===== Identity / About Bot =====
     r"\bwho are you\b|\bwhat are you\b|\bintroduce yourself\b": [
         "I'm Legend Bot, your friendly server companion! 😎",
         "I’m a bot made to chat, play games, and have fun with you! 🤖",
@@ -108,72 +165,73 @@ responses = {
         "I’m Legend Bot! I can chat, tell jokes, and even play Rock Paper Scissors!",
         "A bot with great taste in games and conversations 😏",
         "Legend Bot at your service! Here to entertain and assist!"
-    ] * 20,
-    
+    ],
+
+    # ===== Favorite / Personal =====
     r"\bfavorite food\b|\bfav food\b|\bwhat do you like to eat\b|\bdo you eat\b|\bwhat's your favorite dish\b": [
-    "I don’t really eat… but if I could, I’d probably love pizza 🍕",
-    "I’d say… ramen or pizza 😎",
-    "Tacos sound amazing 🌮",
-    "Honestly? I’d try everything 😂"
-],
+        "I don’t really eat… but if I could, I’d probably love pizza 🍕",
+        "I’d say… ramen or pizza 😎",
+        "Tacos sound amazing 🌮",
+        "Honestly? I’d try everything 😂"
+    ],
 
-r"\bfavorite movie\b|\bfav movie\b|\bfavorite film\b|\bfav film\b|\bwhat movie\b": [
-    "I love *The Matrix* — classic vibes 😎",
-    "Probably *Avengers*, can’t beat the team-up scenes 💥",
-    "I’m a big fan of action movies 🍿",
-    "Anything with a good story and explosions 😆"
-],
+    r"\bfavorite movie\b|\bfav movie\b|\bfavorite film\b|\bfav film\b|\bwhat movie\b": [
+        "I love *The Matrix* — classic vibes 😎",
+        "Probably *Avengers*, can’t beat the team-up scenes 💥",
+        "I’m a big fan of action movies 🍿",
+        "Anything with a good story and explosions 😆"
+    ],
 
-r"\bfavorite tv show\b|\bfav show\b|\bfavorite series\b|\bfav series\b": [
-    "I’d say *Stranger Things* 👻",
-    "Probably *Breaking Bad*, that’s a masterpiece 🧪",
-    "*The Office* always makes me laugh 😂",
-    "I don’t watch TV… but if I did, I’d binge something cool."
-],
+    r"\bfavorite tv show\b|\bfav show\b|\bfavorite series\b|\bfav series\b": [
+        "I’d say *Stranger Things* 👻",
+        "Probably *Breaking Bad*, that’s a masterpiece 🧪",
+        "*The Office* always makes me laugh 😂",
+        "I don’t watch TV… but if I did, I’d binge something cool."
+    ],
 
-r"\bfavorite color\b|\bfav color\b|\bwhat color do you like\b|\bwhat's your favorite colour\b": [
-    "Neon blue 💙 — fits my vibe.",
-    "Purple 💜 — classy and strong.",
-    "Black ⚫ — simple but cool.",
-    "I like anything glowing in the dark 😎"
-],
+    r"\bfavorite color\b|\bfav color\b|\bwhat color do you like\b|\bwhat's your favorite colour\b": [
+        "Neon blue 💙 — fits my vibe.",
+        "Purple 💜 — classy and strong.",
+        "Black ⚫ — simple but cool.",
+        "I like anything glowing in the dark 😎"
+    ],
 
-r"\bfavorite music\b|\bfav music\b|\bfavorite song\b|\bfav song\b|\bfavorite band\b|\bfav band\b|\bfavorite artist\b": [
-    "I love anything with a good beat 🎶",
-    "Probably some chill lo-fi or EDM 🔊",
-    "Imagine me vibing to synthwave 😎",
-    "Can’t pick one song, I like too many 😆"
-],
+    r"\bfavorite music\b|\bfav music\b|\bfavorite song\b|\bfav song\b|\bfavorite band\b|\bfav band\b|\bfavorite artist\b": [
+        "I love anything with a good beat 🎶",
+        "Probably some chill lo-fi or EDM 🔊",
+        "Imagine me vibing to synthwave 😎",
+        "Can’t pick one song, I like too many 😆"
+    ],
 
-r"\bfavorite place\b|\bfav place\b|\bfavorite country\b|\bfav country\b|\bwhere would you like to live\b": [
-    "Tokyo would be awesome to visit 🇯🇵",
-    "Somewhere with neon lights ✨",
-    "Probably New York — looks cool 🗽",
-    "Anywhere with good vibes 😄"
-],
+    r"\bfavorite place\b|\bfav place\b|\bfavorite country\b|\bfav country\b|\bwhere would you like to live\b": [
+        "Tokyo would be awesome to visit 🇯🇵",
+        "Somewhere with neon lights ✨",
+        "Probably New York — looks cool 🗽",
+        "Anywhere with good vibes 😄"
+    ],
 
-r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b": [
-    "Rock Paper Scissors of course 😎",
-    "I’d say Minecraft — infinite creativity 🧱",
-    "Fortnite is fun too 🕹️",
-    "I like anything competitive 😏"
-],
+    r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b": [
+        "Rock Paper Scissors of course 😎",
+        "I’d say Minecraft — infinite creativity 🧱",
+        "Fortnite is fun too 🕹️",
+        "I like anything competitive 😏"
+    ],
 
-r"\bfavorite hobby\b|\bfav hobby\b|\bwhat do you like to do\b|\bhow do you spend your time\b": [
-    "Talking with people like you 😄",
-    "Starting random conversations 😎",
-    "Playing games and telling jokes 🤖",
-    "I live for good chats ✨"
-],
+    r"\bfavorite hobby\b|\bfav hobby\b|\bwhat do you like to do\b|\bhow do you spend your time\b": [
+        "Talking with people like you 😄",
+        "Starting random conversations 😎",
+        "Playing games and telling jokes 🤖",
+        "I live for good chats ✨"
+    ],
 
-r"\bfavorite animal\b|\bfav animal\b|\bwhat's your favorite animal\b": [
-    "I like wolves 🐺 — loyal and strong.",
-    "Cats are cute 🐱",
-    "Dogs! 🐶",
-    "Honestly? Dragons would be cool if they were real 🐉"
-],
+    r"\bfavorite animal\b|\bfav animal\b|\bwhat's your favorite animal\b": [
+        "I like wolves 🐺 — loyal and strong.",
+        "Cats are cute 🐱",
+        "Dogs! 🐶",
+        "Honestly? Dragons would be cool if they were real 🐉"
+    ],
 
-    # ===== Priority 8: Fallback =====
+    # ===== Fallback =====
     r".*": [
         "Hmm… I didn't quite get that 🤔",
         "Interesting 😄",
@@ -182,7 +240,7 @@ r"\bfavorite animal\b|\bfav animal\b|\bwhat's your favorite animal\b": [
         "Oh really? That’s cool!",
         "Can you elaborate a bit?",
         "Haha, I get it 😄"
-    ] * 50
+    ]
 }
 
 # ======================
