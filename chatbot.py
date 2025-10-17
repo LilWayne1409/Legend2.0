@@ -2,9 +2,11 @@ import random
 import discord
 import re
 
-# ===== Extensive Keyword-Response Mapping =====
+# ======================
+# Keyword-Response Mapping
+# ======================
 responses = {
-    # Priorität 1: Specific / Detailed
+    # ===== Priority 1: Specific / Detailed =====
     r"\bhow are you\b|\bhow's it going\b|\bwhat's up\b|\bsup\b": [
         "I’m doing great, thanks! 😄",
         "Pretty chill 😎, how about you?",
@@ -43,7 +45,7 @@ responses = {
         "I enjoy observing conversations!"
     ],
 
-    # Priorität 2: Greetings
+    # ===== Priority 2: Greetings =====
     r"\bhi\b|\bhello\b|\bhey\b|\byo\b|\bhiya\b": [
         "Hey there! 👋",
         "Hello! How’s it going?",
@@ -62,7 +64,7 @@ responses = {
         "Sweet dreams! 😌"
     ],
 
-    # Priorität 3: Reactions / Small Talk
+    # ===== Priority 3: Smalltalk / Reactions =====
     r"\blol\b|\bhaha\b|\blmao\b|\bfunny\b": [
         "Haha, that’s funny 😄",
         "Lmao, totally!",
@@ -78,27 +80,8 @@ responses = {
         "Be careful! 😅",
         "That sounds tricky!"
     ],
-    # ======================
-# Zusätzliche Keywords & Antworten
-# ======================
-responses.update({
-    # Aktivitäten
-    r"\bwhat are you doing\b|\bwhatcha doing\b": [
-        "I’m just hanging out here 😎",
-        "Waiting for your messages! 😁",
-        "Just keeping an eye on the server 👀",
-        "Chillin’ and ready to chat! 🕹️"
-    ],
 
-    # Hilfe / Anleitung
-    r"\bcan you help me\b|\bhelp\b|\bwhat can i do\b": [
-        "Sure! You can try commands like !topic or !rps 🎲",
-        "Of course! Ask me anything, I’ll try to answer 😄",
-        "Absolutely! I can start a game, give a topic, or just chat!",
-        "Yep! You can ping me or play a game like Rock Paper Scissors!"
-    ],
-
-    # Spiele / Spaß
+    # ===== Priority 4: Games / Fun =====
     r"\bwanna play\b|\bgame\b|\bplay something\b": [
         "Sure! Let’s play Rock Paper Scissors! ✂️🪨📄",
         "I’m always up for a game! Want to try !rps?",
@@ -106,16 +89,15 @@ responses.update({
         "Yes! I can challenge you to something fun 😏"
     ],
 
-    # Smalltalk Erweiterung
-    r"\binteresting\b|\bcool\b|\bamazing\b": [
-        "I see… tell me more!",
-        "That sounds interesting 😄",
-        "Oh really? That’s cool!",
-        "Haha, I didn’t expect that 😅"
-    ]
-})
+    # ===== Priority 5: Help / Commands =====
+    r"\bcan you help me\b|\bhelp\b|\bwhat can i do\b": [
+        "Sure! You can try commands like !topic or !rps 🎲",
+        "Of course! Ask me anything, I’ll try to answer 😄",
+        "Absolutely! I can start a game, give a topic, or just chat!",
+        "Yep! You can ping me or play a game like Rock Paper Scissors!"
+    ],
 
-    # Priorität 4: Fallback / Random
+    # ===== Fallback =====
     r".*": [
         "Hmm… I didn't quite get that 🤔",
         "Interesting 😄",
@@ -136,7 +118,8 @@ def get_response(message: str) -> str:
     for pattern, replies in responses.items():
         if re.search(pattern, msg):
             return random.choice(replies)
-    return "Hmm… I didn't quite get that 🤔"
+    # Fallback
+    return random.choice(responses[r".*"])
 
 # ===== Handle Discord Messages =====
 async def handle_message(message: discord.Message):
