@@ -2,18 +2,16 @@ import random
 import discord
 import re
 from collections import deque
-from rps import start_rps_game
-from topic import get_random_topic
-from transformers import GPT2LMHeadModel, GPT2Tokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # ======================
-# GPT-2 KI vorbereiten
+# GPT-2 KI vorbereiten (DistilGPT2)
 # ======================
-tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
-model = GPT2LMHeadModel.from_pretrained("gpt2")
+tokenizer = AutoTokenizer.from_pretrained("distilgpt2")
+model = AutoModelForCausalLM.from_pretrained("distilgpt2")
 
 def generate_response(prompt: str) -> str:
-    """Erzeugt eine GPT-2 Antwort auf den Prompt."""
+    """Erzeugt eine DistilGPT2-Antwort auf den Prompt."""
     input_ids = tokenizer.encode(prompt, return_tensors="pt")
     output = model.generate(
         input_ids,
@@ -24,7 +22,7 @@ def generate_response(prompt: str) -> str:
     )
     response = tokenizer.decode(output[0], skip_special_tokens=True)
     return response
-
+    
 # ======================
 # Keyword-Response Mapping
 # ======================
@@ -279,33 +277,25 @@ def get_response(message: str, channel_id: int = 0) -> str:
         last_messages[channel_id] = deque(maxlen=5)
     last_messages[channel_id].append(msg)
 
-    # Suche nach passenden Keywords
+    # Keywords prüfen
     for pattern, replies in responses.items():
         if re.search(pattern, msg):
-            return random.choice(replies)
+            if replies:
+                return random.choice(replies)
 
-    # Wenn kein Keyword passt → GPT-2-Text erzeugen
+    # Wenn kein Keyword passt → DistilGPT2
     return generate_response(message)
 
 # ======================
-# Handle Discord Messages
+# Discord-Handler
 # ======================
 async def handle_message(message: discord.Message):
     if message.author.bot:
         return
 
-    # Nur reagieren, wenn @Bot erwähnt wird
+    # Nur reagieren, wenn der Bot erwähnt wird
     if message.mentions and message.guild.me in message.mentions:
         content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
-
-        if content.lower() == "yes":
-            await message.reply("Type `!rps` for a normal round or `!rps_bo3` for Best of 3! 🕹️")
-            return
-
-        if "give me a topic" in content.lower():
-            topic = get_random_topic()
-            await message.reply(f"Here's a topic for you: {topic}")
-            return
 
         response = get_response(content, message.channel.id)
         await message.reply(response)
