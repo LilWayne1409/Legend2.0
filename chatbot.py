@@ -2,7 +2,7 @@ import random
 import discord
 import re
 from collections import deque
-from rps import start_rps_game  # Stelle sicher, dass deine rps.py diese Funktion hat
+from rps import start_rps_game  # Deine Funktion aus rps.py
 
 # ======================
 # Keyword-Response Mapping
@@ -66,8 +66,17 @@ responses = {
 
     # ===== Priority 5: Games / Fun =====
     r"\bwanna play\b|\bgame\b|\bplay something\b|\brps\b|\bchallenge\b": [
-        "Do you want to play Rock Paper Scissors? Answer 'yes' to start!"
-    ],
+        "Sure! Let’s play Rock Paper Scissors! ✂️🪨📄",
+        "I’m always up for a game! Want to try !rps?",
+        "Games sound fun! How about a quick match?",
+        "Yes! I can challenge you to something fun 😏",
+        "I love games! Shall we start?",
+        "Challenge accepted! 😎",
+        "Let’s make this interesting! 🕹️",
+        "I’m ready to play, what about you?",
+        "Quick game time! Are you ready?",
+        "Fun games are the best! 🎮"
+    ] * 20,
 
     # ===== Priority 6: Help / Commands =====
     r"\bcan you help me\b|\bhelp\b|\bwhat can i do\b|\binstructions\b|\bguide\b": [
@@ -142,12 +151,7 @@ responses = {
 # ======================
 # Store last messages per channel for context
 # ======================
-last_messages = {}  # key = channel id, value = deque of last 5 messages
-
-# ======================
-# Pending RPS games
-# ======================
-pending_rps = {}  # user_id: True
+last_messages = {}  # key = channel id, value = deque(maxlen=5)
 
 # ======================
 # Function to get response
@@ -175,27 +179,15 @@ async def handle_message(message: discord.Message):
     if message.author.bot:
         return
 
+    # Nur reagieren, wenn @Bot erwähnt wird
     if message.mentions and message.guild.me in message.mentions:
         content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
-        user_id = message.author.id
 
-        # --- 1. Wenn User 'yes' sagt und RPS aussteht ---
-        if user_id in pending_rps:
-            if content.lower() in ["yes", "sure"]:
-                await start_rps_game(message)
-                del pending_rps[user_id]
-                return
-            else:
-                await message.reply("Okay, maybe another time! 😄")
-                del pending_rps[user_id]
-                return
+        # === Wenn User "yes" sagt, starte einfache RPS-Runde ===
+        if content.lower() == "yes":
+            await start_rps_game(message, best_of_3=False)
+            return  # Keine andere Antwort senden
 
-        # --- 2. Keyword-Responses ---
-        for pattern, replies in responses.items():
-            if re.search(pattern, content.lower()):
-                response = random.choice(replies)
-                await message.reply(response)
-                # Wenn es um RPS geht, setze Pending
-                if pattern == r"\bwanna play\b|\bgame\b|\bplay something\b|\brps\b|\bchallenge\b":
-                    pending_rps[user_id] = True
-                return
+        # Normale Keyword-Antwort
+        response = get_response(content, message.channel.id)
+        await message.reply(response)
