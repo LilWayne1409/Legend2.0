@@ -98,7 +98,7 @@ r"\bwho are you\b|\bwhat are you\b|\bintroduce yourself\b": [
     "I’m Legend Bot! I can chat, tell jokes, and even play Rock Paper Scissors!",
     "A bot with great taste in games and conversations 😏",
     "Legend Bot at your service! Here to entertain and assist!"
-] * 20
+] * 20,
 
     # ===== Priority 8: Fallback =====
     r".*": [
