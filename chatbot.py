@@ -2,7 +2,6 @@ import random
 import discord
 import re
 from collections import deque
-from rps import start_rps_game  # Deine Funktion aus rps.py
 
 # ======================
 # Keyword-Response Mapping
@@ -24,7 +23,7 @@ responses = {
 
     # ===== Priority 2: Mood / Feelings =====
     r"\bhow are you(\sdoing)?\b|\bhow's it going\b|\bwhat's up\b|\bsup\b|\bhow do you do\b|\bhow r u\b": [
-        "I’m doing great, thanks! 😄",
+        "I’m doing great, thanks! 😄 How about you?",
         "Pretty chill 😎, how about you?",
         "All good! How’s your day going?",
         "Feeling awesome today! What about you?",
@@ -66,16 +65,11 @@ responses = {
 
     # ===== Priority 5: Games / Fun =====
     r"\bwanna play\b|\bgame\b|\bplay something\b|\brps\b|\bchallenge\b": [
-        "Sure! Let’s play Rock Paper Scissors! ✂️🪨📄",
-        "I’m always up for a game! Want to try !rps?",
-        "Games sound fun! How about a quick match?",
-        "Yes! I can challenge you to something fun 😏",
-        "I love games! Shall we start?",
-        "Challenge accepted! 😎",
-        "Let’s make this interesting! 🕹️",
-        "I’m ready to play, what about you?",
-        "Quick game time! Are you ready?",
-        "Fun games are the best! 🎮"
+        "I’d love to play! 😄 Use the command `!rps` for a normal round or `!rps_bo3` for Best of 3!",
+        "Games sound fun! Just type `!rps` for a simple game or `!rps_bo3` for a Best of 3 match!",
+        "Ready to challenge me? Use `!rps` or `!rps_bo3`!",
+        "I can’t start the game here 😅, but type `!rps` or `!rps_bo3` to play!",
+        "Let’s play Rock Paper Scissors! Use `!rps` or `!rps_bo3`!"
     ] * 20,
 
     # ===== Priority 6: Help / Commands =====
@@ -183,10 +177,12 @@ async def handle_message(message: discord.Message):
     if message.mentions and message.guild.me in message.mentions:
         content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
 
-        # === Wenn User "yes" sagt, starte einfache RPS-Runde ===
-        if content.lower() == "yes":
-            await start_rps_game(message, best_of_3=False)
-            return  # Keine andere Antwort senden
+        # Hinweis auf Commands statt Spiel starten
+        if any(k in content.lower() for k in ["rps", "game", "play", "challenge", "wanna play"]):
+            await message.reply(
+                "Hey! 😄 To play Rock Paper Scissors, type `!rps` for a normal round or `!rps_bo3` for Best of 3!"
+            )
+            return
 
         # Normale Keyword-Antwort
         response = get_response(content, message.channel.id)
