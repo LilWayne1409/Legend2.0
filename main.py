@@ -4,7 +4,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from rps import RPSView, RPSBo3View
 from topic import get_random_topic, ChatReviver
-from chatbot import handle_message  # dein handle_message aus chatbot.py
+from chatbot import handle_message, last_messages  # Cache und Handler importieren
 
 # ==== LOAD ENV ====
 load_dotenv()
@@ -23,6 +23,30 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 # ==== CHAT REVIVER ====
 reviver = ChatReviver(bot, CHANNEL_ID)
+
+# ======================
+# CACHE COMMANDS
+# ======================
+@bot.command(name="clear_cache")
+@commands.has_permissions(administrator=True)
+async def clear_cache(ctx):
+    """Leert den globalen Bot-Cache (alle Channels)."""
+    last_messages.clear()
+    import gc
+    gc.collect()
+    await ctx.send("✅ Global cache cleared successfully!")
+
+@bot.command(name="clear_channel_cache")
+@commands.has_permissions(administrator=True)
+async def clear_channel_cache(ctx):
+    """Leert nur den Cache des aktuellen Channels."""
+    if ctx.channel.id in last_messages:
+        del last_messages[ctx.channel.id]
+        import gc
+        gc.collect()
+        await ctx.send(f"✅ Cache for this channel cleared.")
+    else:
+        await ctx.send("No cache stored for this channel.")
 
 # ==== EVENTS ====
 @bot.event
@@ -45,7 +69,7 @@ async def on_message(message):
     # process commands after chatbot
     await bot.process_commands(message)
 
-# ==== COMMANDS ====
+# ==== BASIC COMMANDS ====
 @bot.command()
 async def ping(ctx):
     await ctx.send(f"Pong! 🏓 {round(bot.latency * 1000)}ms")
@@ -93,7 +117,9 @@ async def info(ctx):
             "**!topic** - Get a random chat topic\n"
             "**!rps [@User]** - Play Rock Paper Scissors\n"
             "**!rps_bo3 [@User]** - Play Best of 3 Rock Paper Scissors\n"
-            "**!info** - Show this info message"
+            "**!info** - Show this info message\n"
+            "**!clear_cache** - Clear all cached messages\n"
+            "**!clear_channel_cache** - Clear cached messages of this channel only"
         ),
         inline=False
     )
