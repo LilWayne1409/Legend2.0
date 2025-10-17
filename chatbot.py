@@ -3,6 +3,7 @@ import discord
 import re
 from collections import deque
 from rps import start_rps_game  # Deine RPS-Funktion
+from topic import topics  # <- Importiere deine Liste aus topic.py
 
 # ======================
 # Keyword-Response Mapping
@@ -37,12 +38,12 @@ responses = {
         "Nice! What’s making you feel good today?"
     ] * 20,
 
-r"\bbored\b|\btired\b|\blonely\b|\bsad\b": [
-    "Oh no! 😢 How about a game to cheer you up? Type `!rps` for a normal round or `!rps_bo3` for Best of 3! 🕹️",
-    "Maybe a game will help! 😏 Use `!rps` or `!rps_bo3` and we can start right away!",
-    "I'm here to cheer you up! Want to play a round of Rock Paper Scissors? `!rps` or `!rps_bo3`",
-    "Cheer up! 😄 Let's play! Type `!rps` for a simple round or `!rps_bo3` for Best of 3!"
-] * 20,
+    r"\bbored\b|\btired\b|\blonely\b|\bsad\b": [
+        "Oh no! 😢 How about a game to cheer you up? Type `!rps` for a normal round or `!rps_bo3` for Best of 3! 🕹️",
+        "Maybe a game will help! 😏 Use `!rps` or `!rps_bo3` and we can start right away!",
+        "I'm here to cheer you up! Want to play a round of Rock Paper Scissors? `!rps` or `!rps_bo3`",
+        "Cheer up! 😄 Let's play! Type `!rps` for a simple round or `!rps_bo3` for Best of 3!"
+    ] * 20,
 
     # ===== Priority 3: Games / Fun =====
     r"\bwanna play\b|\bgame\b|\bplay something\b|\brps\b|\bchallenge\b": [
@@ -88,19 +89,24 @@ r"\bbored\b|\btired\b|\blonely\b|\bsad\b": [
         "Sweet dreams! 😌",
         "Nighty night! See you tomorrow! 🛌"
     ],
-    
-    # ===== Priority X: Identity / About Bot =====
-r"\bwho are you\b|\bwhat are you\b|\bintroduce yourself\b": [
-    "I'm Legend Bot, your friendly server companion! 😎",
-    "I’m a bot made to chat, play games, and have fun with you! 🤖",
-    "They call me Legend Bot! Here to make your day more fun!",
-    "Just your friendly neighborhood bot, always ready to chat!",
-    "I’m Legend Bot! I can chat, tell jokes, and even play Rock Paper Scissors!",
-    "A bot with great taste in games and conversations 😏",
-    "Legend Bot at your service! Here to entertain and assist!"
-] * 20,
 
-    # ===== Priority 8: Fallback =====
+    # ===== Priority 8: Identity / About Bot =====
+    r"\bwho are you\b|\bwhat are you\b|\bintroduce yourself\b": [
+        "I'm Legend Bot, your friendly server companion! 😎",
+        "I’m a bot made to chat, play games, and have fun with you! 🤖",
+        "They call me Legend Bot! Here to make your day more fun!",
+        "Just your friendly neighborhood bot, always ready to chat!",
+        "I’m Legend Bot! I can chat, tell jokes, and even play Rock Paper Scissors!",
+        "A bot with great taste in games and conversations 😏",
+        "Legend Bot at your service! Here to entertain and assist!"
+    ] * 20,
+
+    # ===== Priority 9: Topics =====
+    r"\bgive me a topic\b|\btopic\b": [
+        lambda: random.choice(topics)
+    ],
+
+    # ===== Priority 10: Fallback =====
     r".*": [
         "Hmm… I didn't quite get that 🤔",
         "Interesting 😄",
@@ -131,9 +137,11 @@ def get_response(message: str, channel_id: int = 0) -> str:
     # Suche nach Keywords
     for pattern, replies in responses.items():
         if re.search(pattern, msg):
-            return random.choice(replies)
+            reply = random.choice(replies)
+            if callable(reply):  # Falls es eine Funktion ist (wie bei Topics)
+                return reply()
+            return reply
 
-    # Fallback
     return random.choice(responses[r".*"])
 
 # ======================
