@@ -4,6 +4,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from rps import RPSView, RPSBo3View
 from topic import get_random_topic, ChatReviver
+from chatbot import handle_message
 
 # ==== LOAD ENV ====
 load_dotenv()
@@ -34,7 +35,14 @@ async def on_ready():
 async def on_message(message):
     if message.author.bot:
         return
+
+    # update reviver activity
     reviver.update_activity()
+
+    # chatbot handling
+    await handle_message(message)
+
+    # process commands after chatbot
     await bot.process_commands(message)
 
 # ==== COMMANDS ====
