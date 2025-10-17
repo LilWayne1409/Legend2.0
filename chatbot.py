@@ -1,12 +1,3 @@
-import random
-import discord
-import re
-from collections import deque
-
-# ======================
-# Keyword-Response Mapping
-# ======================
-
 responses = {
     # ===== Priority 1: Greetings =====
     r"\bhi\b|\bhello\b|\bhey\b|\byo\b|\bhiya\b|\bgreetings\b|\bwhat's up\b|\bhowdy\b": [
@@ -120,21 +111,20 @@ responses = {
         "Fun fact: Sloths can hold their breath longer than dolphins! 🦥"
     ] * 20,
 
-# ===== Priority 1: Greetings / Tageszeit =====
-r"\bgood morning\b|\bmorning\b": [
-    "Good morning! ☀️ Ready for a great day?",
-    "Morning! How’s it going so far?",
-    "Hey! Have an awesome morning! 😄",
-    "Good morning! Did you sleep well?"
-]
+    # ===== Priority 9: Greetings / Tageszeit =====
+    r"\bgood morning\b|\bmorning\b": [
+        "Good morning! ☀️ Ready for a great day?",
+        "Morning! How’s it going so far?",
+        "Hey! Have an awesome morning! 😄",
+        "Good morning! Did you sleep well?"
+    ],
+    r"\bgood night\b|\bnight\b|\bgn\b": [
+        "Good night! 🌙 Sleep tight!",
+        "Sweet dreams! 😌",
+        "Nighty night! See you tomorrow! 🛌"
+    ],
 
-r"\bgood night\b|\bnight\b|\bgn\b": [
-    "Good night! 🌙 Sleep tight!",
-    "Sweet dreams! 😌",
-    "Nighty night! See you tomorrow! 🛌"
-]
-
-    # ===== Priority 9: Fallback =====
+    # ===== Priority 10: Fallback =====
     r".*": [
         "Hmm… I didn't quite get that 🤔",
         "Interesting 😄",
@@ -148,42 +138,3 @@ r"\bgood night\b|\bnight\b|\bgn\b": [
         "True true 😌"
     ] * 100
 }
-
-# ======================
-# Store last messages per channel for context
-# ======================
-last_messages = {}  # key = channel id, value = deque of last 5 messages
-
-# ======================
-# Function to get response
-# ======================
-def get_response(message: str, channel_id: int = 0) -> str:
-    msg = message.lower()
-
-    # Kontext speichern
-    if channel_id not in last_messages:
-        last_messages[channel_id] = deque(maxlen=5)
-    last_messages[channel_id].append(msg)
-
-    # Suche nach Keywords
-    for pattern, replies in responses.items():
-        if re.search(pattern, msg):
-            return random.choice(replies)
-
-    # Fallback
-    return random.choice(responses[r".*"])
-
-# ======================
-# Handle Discord Messages
-# ======================
-async def handle_message(message: discord.Message):
-    if message.author.bot:
-        return
-
-    # Nur reagieren, wenn @Bot erwähnt wird
-    if message.mentions and message.guild.me in message.mentions:
-        # Entferne Erwähnung
-        content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
-        if content:
-            response = get_response(content, message.channel.id)
-            await message.reply(response)
