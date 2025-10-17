@@ -2,26 +2,24 @@ import random
 import discord
 import re
 from collections import deque
+from rps import start_rps_game
+from topic import get_random_topic
+
+# Huggingface / GPT2 Imports
 from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
 
 # ======================
-# GPT-2 KI vorbereiten (DistilGPT2)
+# GPT2 Setup (Fallback)
 # ======================
 tokenizer = AutoTokenizer.from_pretrained("distilgpt2")
 model = AutoModelForCausalLM.from_pretrained("distilgpt2")
 
-def generate_response(prompt: str) -> str:
-    """Erzeugt eine DistilGPT2-Antwort auf den Prompt."""
-    input_ids = tokenizer.encode(prompt, return_tensors="pt")
-    output = model.generate(
-        input_ids,
-        max_length=80,
-        num_return_sequences=1,
-        no_repeat_ngram_size=2,
-        pad_token_id=tokenizer.eos_token_id
-    )
-    response = tokenizer.decode(output[0], skip_special_tokens=True)
-    return response
+def gpt2_fallback(prompt: str, max_length: int = 50) -> str:
+    inputs = tokenizer.encode(prompt, return_tensors="pt")
+    outputs = model.generate(inputs, max_length=max_length, do_sample=True, top_p=0.9, top_k=50)
+    text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    return text
     
 # ======================
 # Keyword-Response Mapping
@@ -262,12 +260,12 @@ responses = {
 }
 
 # ======================
-# Store last messages per channel for context
+# Store last messages per channel
 # ======================
 last_messages = {}  # key = channel id, value = deque(maxlen=5)
 
 # ======================
-# Funktion, um Antwort zu generieren
+# Function to get response
 # ======================
 def get_response(message: str, channel_id: int = 0) -> str:
     msg = message.lower()
@@ -277,25 +275,37 @@ def get_response(message: str, channel_id: int = 0) -> str:
         last_messages[channel_id] = deque(maxlen=5)
     last_messages[channel_id].append(msg)
 
-    # Keywords prüfen
+    # Suche nach Keywords
     for pattern, replies in responses.items():
         if re.search(pattern, msg):
-            if replies:
-                return random.choice(replies)
+            return random.choice(replies)
 
-    # Wenn kein Keyword passt → DistilGPT2
-    return generate_response(message)
+    # Fallback mit GPT2
+    fallback_prompt = "Legend Bot conversation: " + msg
+    return gpt2_fallback(fallback_prompt, max_length=40)
 
 # ======================
-# Discord-Handler
+# Handle Discord Messages
 # ======================
 async def handle_message(message: discord.Message):
     if message.author.bot:
         return
 
-    # Nur reagieren, wenn der Bot erwähnt wird
+    # Nur reagieren, wenn @Bot erwähnt wird
     if message.mentions and message.guild.me in message.mentions:
         content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
 
+        # User sagt "yes" → nur Commands
+        if content.lower() == "yes":
+            await message.reply("Type `!rps` for a normal round or `!rps_bo3` for Best of 3! 🕹️")
+            return
+
+        # User will ein Topic
+        if "give me a topic" in content.lower():
+            topic = get_random_topic()
+            await message.reply(f"Here's a topic for you: {topic}")
+            return
+
+        # Normale Keyword-Antwort oder GPT2-Fallback
         response = get_response(content, message.channel.id)
         await message.reply(response)
