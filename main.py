@@ -4,12 +4,11 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from rps import RPSView, RPSBo3View
 from topic import get_random_topic
-from chatbot import get_response  # Dein Keyword-Responder
+from chatbot import handle_message  # dein Keyword-Responder
 
 # ==== LOAD ENV ====
 load_dotenv()
 TOKEN = os.environ.get("TOKEN")
-CHANNEL_ID = int(os.environ.get("CHANNEL_ID", 0))
 
 if not TOKEN:
     print("❌ TOKEN not set!")
@@ -33,18 +32,14 @@ async def on_message(message):
     if message.author.bot:
         return
 
-    # Zuerst Commands abarbeiten
+    # Zuerst prüfen, ob es ein Command ist
     ctx = await bot.get_context(message)
     if ctx.valid:
         await bot.process_commands(message)
-        return  # Stoppe hier, keine Keyword-Antwort
+        return  # stop hier, Keyword-Responder nicht ausführen
 
-    # Reagiere nur auf Erwähnungen
-    if message.guild and bot.user in message.mentions:
-        content = message.content
-        content = content.replace(f"<@!{bot.user.id}>", "").replace(f"<@{bot.user.id}>", "").strip()
-        response = get_response(content, message.channel.id)
-        await message.reply(response)
+    # Alles andere -> Keyword-Responder
+    await handle_message(message)
 
 # ==== COMMANDS ====
 @bot.command()
