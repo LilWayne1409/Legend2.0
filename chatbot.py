@@ -3,7 +3,7 @@ import discord
 import re
 from collections import deque
 from rps import start_rps_game  # Deine RPS-Funktion
-from topic import topics  # <- Importiere deine Liste aus topic.py
+from topic import get_random_topic  # <- Importiere die Funktion aus topic.py
 
 # ======================
 # Keyword-Response Mapping
@@ -90,7 +90,7 @@ responses = {
         "Nighty night! See you tomorrow! 🛌"
     ],
 
-    # ===== Priority 8: Identity / About Bot =====
+    # ===== Priority X: Identity / About Bot =====
     r"\bwho are you\b|\bwhat are you\b|\bintroduce yourself\b": [
         "I'm Legend Bot, your friendly server companion! 😎",
         "I’m a bot made to chat, play games, and have fun with you! 🤖",
@@ -101,12 +101,7 @@ responses = {
         "Legend Bot at your service! Here to entertain and assist!"
     ] * 20,
 
-    # ===== Priority 9: Topics =====
-    r"\bgive me a topic\b|\btopic\b": [
-        lambda: random.choice(topics)
-    ],
-
-    # ===== Priority 10: Fallback =====
+    # ===== Priority 8: Fallback =====
     r".*": [
         "Hmm… I didn't quite get that 🤔",
         "Interesting 😄",
@@ -137,11 +132,9 @@ def get_response(message: str, channel_id: int = 0) -> str:
     # Suche nach Keywords
     for pattern, replies in responses.items():
         if re.search(pattern, msg):
-            reply = random.choice(replies)
-            if callable(reply):  # Falls es eine Funktion ist (wie bei Topics)
-                return reply()
-            return reply
+            return random.choice(replies)
 
+    # Fallback
     return random.choice(responses[r".*"])
 
 # ======================
@@ -159,6 +152,12 @@ async def handle_message(message: discord.Message):
         if content.lower() == "yes":
             await message.reply("Type `!rps` for a normal round or `!rps_bo3` for Best of 3! 🕹️")
             return  # Keine andere Antwort senden
+
+        # === Wenn User ein Topic will ===
+        if "give me a topic" in content.lower():
+            topic = get_random_topic()
+            await message.reply(f"Here's a topic for you: {topic}")
+            return
 
         # Normale Keyword-Antwort
         response = get_response(content, message.channel.id)
