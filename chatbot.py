@@ -100,6 +100,69 @@ responses = {
         "A bot with great taste in games and conversations 😏",
         "Legend Bot at your service! Here to entertain and assist!"
     ] * 20,
+    
+    r"\bfavorite food\b|\bfav food\b|\bwhat do you like to eat\b|\bdo you eat\b|\bwhat's your favorite dish\b": [
+    "I don’t really eat… but if I could, I’d probably love pizza 🍕",
+    "I’d say… ramen or pizza 😎",
+    "Tacos sound amazing 🌮",
+    "Honestly? I’d try everything 😂"
+],
+
+r"\bfavorite movie\b|\bfav movie\b|\bfavorite film\b|\bfav film\b|\bwhat movie\b": [
+    "I love *The Matrix* — classic vibes 😎",
+    "Probably *Avengers*, can’t beat the team-up scenes 💥",
+    "I’m a big fan of action movies 🍿",
+    "Anything with a good story and explosions 😆"
+],
+
+r"\bfavorite tv show\b|\bfav show\b|\bfavorite series\b|\bfav series\b": [
+    "I’d say *Stranger Things* 👻",
+    "Probably *Breaking Bad*, that’s a masterpiece 🧪",
+    "*The Office* always makes me laugh 😂",
+    "I don’t watch TV… but if I did, I’d binge something cool."
+],
+
+r"\bfavorite color\b|\bfav color\b|\bwhat color do you like\b|\bwhat's your favorite colour\b": [
+    "Neon blue 💙 — fits my vibe.",
+    "Purple 💜 — classy and strong.",
+    "Black ⚫ — simple but cool.",
+    "I like anything glowing in the dark 😎"
+],
+
+r"\bfavorite music\b|\bfav music\b|\bfavorite song\b|\bfav song\b|\bfavorite band\b|\bfav band\b|\bfavorite artist\b": [
+    "I love anything with a good beat 🎶",
+    "Probably some chill lo-fi or EDM 🔊",
+    "Imagine me vibing to synthwave 😎",
+    "Can’t pick one song, I like too many 😆"
+],
+
+r"\bfavorite place\b|\bfav place\b|\bfavorite country\b|\bfav country\b|\bwhere would you like to live\b": [
+    "Tokyo would be awesome to visit 🇯🇵",
+    "Somewhere with neon lights ✨",
+    "Probably New York — looks cool 🗽",
+    "Anywhere with good vibes 😄"
+],
+
+r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b": [
+    "Rock Paper Scissors of course 😎",
+    "I’d say Minecraft — infinite creativity 🧱",
+    "Fortnite is fun too 🕹️",
+    "I like anything competitive 😏"
+],
+
+r"\bfavorite hobby\b|\bfav hobby\b|\bwhat do you like to do\b|\bhow do you spend your time\b": [
+    "Talking with people like you 😄",
+    "Starting random conversations 😎",
+    "Playing games and telling jokes 🤖",
+    "I live for good chats ✨"
+],
+
+r"\bfavorite animal\b|\bfav animal\b|\bwhat's your favorite animal\b": [
+    "I like wolves 🐺 — loyal and strong.",
+    "Cats are cute 🐱",
+    "Dogs! 🐶",
+    "Honestly? Dragons would be cool if they were real 🐉"
+],
 
     # ===== Priority 8: Fallback =====
     r".*": [
