@@ -25,30 +25,8 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 reviver = ChatReviver(bot, CHANNEL_ID)
 
 # ======================
-# CACHE COMMANDS
+# Events
 # ======================
-@bot.command(name="clear_cache")
-@commands.has_permissions(administrator=True)
-async def clear_cache(ctx):
-    """Leert den globalen Bot-Cache (alle Channels)."""
-    last_messages.clear()
-    import gc
-    gc.collect()
-    await ctx.send("✅ Global cache cleared successfully!")
-
-@bot.command(name="clear_channel_cache")
-@commands.has_permissions(administrator=True)
-async def clear_channel_cache(ctx):
-    """Leert nur den Cache des aktuellen Channels."""
-    if ctx.channel.id in last_messages:
-        del last_messages[ctx.channel.id]
-        import gc
-        gc.collect()
-        await ctx.send(f"✅ Cache for this channel cleared.")
-    else:
-        await ctx.send("No cache stored for this channel.")
-
-# ==== EVENTS ====
 @bot.event
 async def on_ready():
     print(f"✅ Logged in as {bot.user}")
@@ -60,13 +38,13 @@ async def on_message(message):
     if message.author.bot:
         return
 
-    # update reviver activity
+    # Update ChatReviver activity
     reviver.update_activity()
 
-    # chatbot handling
+    # Handle chatbot responses
     await handle_message(message)
 
-    # process commands after chatbot
+    # Process bot commands
     await bot.process_commands(message)
 
 # ==== BASIC COMMANDS ====
