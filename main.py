@@ -3,8 +3,7 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 from rps import RPSView, RPSBo3View
-from topic import get_random_topic, ChatReviver
-from chatbot import handle_message, last_messages  # Cache und Handler importieren
+from topic import get_random_topic
 
 # ==== LOAD ENV ====
 load_dotenv()
@@ -21,33 +20,13 @@ intents.messages = True
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# ==== CHAT REVIVER ====
-reviver = ChatReviver(bot, CHANNEL_ID)
-
-# ======================
-# Events
-# ======================
+# ==== EVENTS ====
 @bot.event
 async def on_ready():
     print(f"✅ Logged in as {bot.user}")
     await bot.change_presence(activity=discord.Game(name="!info"))
-    await reviver.start()
 
-@bot.event
-async def on_message(message):
-    if message.author.bot:
-        return
-
-    # Update ChatReviver activity
-    reviver.update_activity()
-
-    # Handle chatbot responses
-    await handle_message(message)
-
-    # Process bot commands
-    await bot.process_commands(message)
-
-# ==== BASIC COMMANDS ====
+# ==== COMMANDS ====
 @bot.command()
 async def ping(ctx):
     await ctx.send(f"Pong! 🏓 {round(bot.latency * 1000)}ms")
@@ -95,9 +74,7 @@ async def info(ctx):
             "**!topic** - Get a random chat topic\n"
             "**!rps [@User]** - Play Rock Paper Scissors\n"
             "**!rps_bo3 [@User]** - Play Best of 3 Rock Paper Scissors\n"
-            "**!info** - Show this info message\n"
-            "**!clear_cache** - Clear all cached messages\n"
-            "**!clear_channel_cache** - Clear cached messages of this channel only"
+            "**!info** - Show this info message"
         ),
         inline=False
     )
