@@ -146,3 +146,42 @@ responses = {
         "True true 😌"
     ] * 100
 }
+
+# ======================
+# Store last messages per channel for context
+# ======================
+last_messages = {}  # key = channel id, value = deque of last 5 messages
+
+# ======================
+# Function to get response
+# ======================
+def get_response(message: str, channel_id: int = 0) -> str:
+    msg = message.lower()
+
+    # Kontext speichern
+    if channel_id not in last_messages:
+        last_messages[channel_id] = deque(maxlen=5)
+    last_messages[channel_id].append(msg)
+
+    # Suche nach Keywords
+    for pattern, replies in responses.items():
+        if re.search(pattern, msg):
+            return random.choice(replies)
+
+    # Fallback
+    return random.choice(responses[r".*"])
+
+# ======================
+# Handle Discord Messages
+# ======================
+async def handle_message(message: discord.Message):
+    if message.author.bot:
+        return
+
+    # Nur reagieren, wenn @Bot erwähnt wird
+    if message.mentions and message.guild.me in message.mentions:
+        # Entferne Erwähnung
+        content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
+        if content:
+            response = get_response(content, message.channel.id)
+            await message.reply(response)
