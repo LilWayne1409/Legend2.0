@@ -91,7 +91,7 @@ responses = {
     ],
     
         # 👋 Goodbye
-    r"\bbye\b|\bgoodbye\b|\bsee ya\b|\bsee you\b|\bcya\b|\blater\b|\bgood night\b|\bgn\b|\bnight\b": [
+    r"\bbye\b|\bgoodbye\b|\bsee ya\b|\bsee you\b|\bcya\b|\blater\b": [
         "Goodbye! 👋",
         "See you later 👑",
         "Take care!",
