@@ -78,6 +78,42 @@ responses = {
         "Be careful! 😅",
         "That sounds tricky!"
     ],
+    # ======================
+# Zusätzliche Keywords & Antworten
+# ======================
+responses.update({
+    # Aktivitäten
+    r"\bwhat are you doing\b|\bwhatcha doing\b": [
+        "I’m just hanging out here 😎",
+        "Waiting for your messages! 😁",
+        "Just keeping an eye on the server 👀",
+        "Chillin’ and ready to chat! 🕹️"
+    ],
+
+    # Hilfe / Anleitung
+    r"\bcan you help me\b|\bhelp\b|\bwhat can i do\b": [
+        "Sure! You can try commands like !topic or !rps 🎲",
+        "Of course! Ask me anything, I’ll try to answer 😄",
+        "Absolutely! I can start a game, give a topic, or just chat!",
+        "Yep! You can ping me or play a game like Rock Paper Scissors!"
+    ],
+
+    # Spiele / Spaß
+    r"\bwanna play\b|\bgame\b|\bplay something\b": [
+        "Sure! Let’s play Rock Paper Scissors! ✂️🪨📄",
+        "I’m always up for a game! Want to try !rps?",
+        "Games sound fun! How about a quick match?",
+        "Yes! I can challenge you to something fun 😏"
+    ],
+
+    # Smalltalk Erweiterung
+    r"\binteresting\b|\bcool\b|\bamazing\b": [
+        "I see… tell me more!",
+        "That sounds interesting 😄",
+        "Oh really? That’s cool!",
+        "Haha, I didn’t expect that 😅"
+    ]
+})
 
     # Priorität 4: Fallback / Random
     r".*": [
