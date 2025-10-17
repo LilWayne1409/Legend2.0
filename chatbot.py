@@ -88,6 +88,17 @@ r"\bbored\b|\btired\b|\blonely\b|\bsad\b": [
         "Sweet dreams! 😌",
         "Nighty night! See you tomorrow! 🛌"
     ],
+    
+    # ===== Priority X: Identity / About Bot =====
+r"\bwho are you\b|\bwhat are you\b|\bintroduce yourself\b": [
+    "I'm Legend Bot, your friendly server companion! 😎",
+    "I’m a bot made to chat, play games, and have fun with you! 🤖",
+    "They call me Legend Bot! Here to make your day more fun!",
+    "Just your friendly neighborhood bot, always ready to chat!",
+    "I’m Legend Bot! I can chat, tell jokes, and even play Rock Paper Scissors!",
+    "A bot with great taste in games and conversations 😏",
+    "Legend Bot at your service! Here to entertain and assist!"
+] * 20
 
     # ===== Priority 8: Fallback =====
     r".*": [
