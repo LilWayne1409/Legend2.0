@@ -238,10 +238,11 @@ r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b
 }
 
 
-# ===== Letzte Nachrichten pro Channel speichern (Kontext) =====
+
+# ===== Letzte Nachrichten pro Channel =====
 last_messages = {}  # key = channel id, value = deque(maxlen=5)
 
-# ===== OpenRouter GPT Fallback =====
+# ===== GPT Fallback =====
 async def gpt_fallback(prompt: str) -> str:
     if not OPENROUTER_KEY:
         return "API key not set!"
@@ -263,30 +264,28 @@ async def gpt_fallback(prompt: str) -> str:
     except Exception as e:
         return f"Error: {str(e)}"
 
-# ===== Keywords Antwortfunktion =====
+# ===== Keyword Antwort =====
 def get_keyword_response(message: str, channel_id: int) -> str | None:
     global last_messages
     msg = message.lower()
 
-    # Kontext speichern
     if channel_id not in last_messages:
         last_messages[channel_id] = deque(maxlen=5)
     last_messages[channel_id].append(msg)
 
-    # Keywords prüfen
     for pattern, replies in keywords.items():
         if re.search(pattern, msg):
             return random.choice(replies)
+    return None
 
-    return None  # Kein Keyword gefunden → GPT fallback
-
-# ===== Hauptfunktion für on_message =====
+# ===== Handle Message =====
 async def handle_message(message: "discord.Message"):
     if message.author.bot:
         return
 
+    # Nur reagieren, wenn Bot erwähnt wird
     if not message.guild or not (message.mentions and message.guild.me in message.mentions):
-        return  # Nur auf Erwähnung reagieren
+        return
 
     content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
 
