@@ -18,6 +18,28 @@ intents.guilds = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+# ---- Welcome Messages with Bot Intro ----
+welcome_messages = [
+    "Hey {member}, welcome to Lagged Legends! 🎮 I’m Legend Bot 🤖, your AI companion. Try mentioning me to start a chat!",
+    "Welcome, {member}! 👑 I’m Legend Bot, here to keep the server legendary. Want a topic to talk about? Just ask me!",
+    "Yo {member}! 😎 Legend Bot here — I can chat, play mini-games, or give you fun topics. Say hi and see what happens!",
+    "Glad you joined, {member}! 💬 I’m Legend Bot, your AI buddy. Mention me anytime to start a conversation!",
+    "Welcome to Lagged Legends, {member}! 🕹 I’m Legend Bot 🤖. I love chatting and sharing random topics — give me a try!",
+    "Hey hey {member}! 🌟 Legend Bot here. You can talk to me, play !rps, or ask me for a topic. Let’s make it fun!",
+    "Hello {member}! 🤖 I’m Legend Bot, your new AI companion. Want to start chatting? Just mention me and say something!",
+    "Welcome aboard, {member}! 🚀 I’m Legend Bot. I can answer questions, give topics, and even play mini-games with you!",
+    "What’s up {member}? 😄 I’m Legend Bot, ready to spice up the chat. Mention me and start a conversation!",
+    "Greetings {member}! ✨ Legend Bot here — chat with me, get random topics, or challenge me to a game. Let’s go!"
+]
+
+# ---- Event: Member Join ----
+@bot.event
+async def on_member_join(member):
+    channel = member.guild.get_channel(CHANNEL_ID)  # Set your welcome channel ID
+    if channel:
+        message = random.choice(welcome_messages).format(member=member.mention)
+        await channel.send(message)
+        
 # ==== EVENTS ====
 @bot.event
 async def on_ready():
