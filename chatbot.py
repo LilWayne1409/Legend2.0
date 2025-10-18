@@ -242,11 +242,18 @@ r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b
 # ---- Letzte Nachrichten pro Channel speichern ----
 last_messages = {}  # key = channel id, value = deque(maxlen=5)
 
+# ---- GPT Fallback ----
 async def gpt_fallback(prompt: str) -> str:
     if not OPENROUTER_KEY:
         return "API key not set!"
+
     headers = {"Authorization": f"Bearer {OPENROUTER_KEY}", "Content-Type": "application/json"}
-    payload = {"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": prompt}], "max_tokens": 150}
+    payload = {
+        "model": "gpt-3.5-turbo",
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 150
+    }
+
     async with aiohttp.ClientSession() as session:
         async with session.post(OPENROUTER_URL, headers=headers, json=payload) as resp:
             if resp.status != 200:
@@ -257,43 +264,37 @@ async def gpt_fallback(prompt: str) -> str:
             except:
                 return "Error reading GPT response"
 
+# ---- Keyword Response Funktion ----
 def get_keyword_response(message: str, channel_id: int) -> str | None:
     msg = message.lower()
     if channel_id not in last_messages:
         last_messages[channel_id] = deque(maxlen=5)
     last_messages[channel_id].append(msg)
+
+    # Obere Keywords prüfen
     for pattern, replies in responses.items():
         if re.search(pattern, msg):
             return random.choice(replies)
-    return None
 
-async def handle_message(message):
+    # Spezielle Keywords prüfen
+    for pattern, reply in special_responses.items():
+        if re.search(pattern, msg):
+            return reply() if callable(reply) else reply
+
+    return None  # Kein Keyword → GPT fallback
+
+# ---- Haupt Handle Message ----
+async def handle_message(message: "discord.Message"):
     if message.author.bot:
         return
 
-    # Nur auf Bot-Erwähnungen reagieren
-    if not (message.mentions and message.guild.me in message.mentions):
-        return
-
+    # Nachrichteninhalt ohne Bot-Mention
     content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
 
-    if len(content) > MAX_MESSAGE_LENGTH:
-        content = content[:MAX_MESSAGE_LENGTH] + "..."
-        await message.reply("⚠️ Your message was too long and has been shortened.")
-
-    # Keywords
+    # Keyword prüfen
     response = get_keyword_response(content, message.channel.id)
     if response:
         await message.reply(response)
-        return
-
-    # Spezielle Antworten
-    if content.lower() == "yes":
-        await message.reply("Type !rps for a normal round or !rps_bo3 for Best of 3! 🕹")
-        return
-    if "give me a topic" in content.lower():
-        topic = get_random_topic()
-        await message.reply(f"Here's a topic for you: {topic}")
         return
 
     # GPT Fallback
