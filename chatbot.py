@@ -243,26 +243,32 @@ def store_context(channel_id: int, message: str):
     last_messages[channel_id].append(message.lower())
 
 # ======================
-# GPT-Fallback
+# GPT Fallback
 # ======================
 async def gpt_fallback(prompt: str) -> str:
     if not HF_KEY:
         return "GPT is not configured! Please set your HF_API_KEY."
     
-    url = "https://api-inference.huggingface.co/models/gpt2"  # kleines Modell
+    url = "https://api-inference.huggingface.co/models/gpt2"
     headers = {"Authorization": f"Bearer {HF_KEY}"}
-    payload = {"inputs": prompt, "options": {"use_cache": False}}
+    payload = {"inputs": prompt, "options": {"wait_for_model": True}}
 
     async with aiohttp.ClientSession() as session:
-        async with session.post(url, headers=headers, json=payload, timeout=60) as resp:
-            if resp.status == 200:
-                data = await resp.json()
-                # GPT2 Response extrahieren
-                if isinstance(data, list) and "generated_text" in data[0]:
-                    return data[0]["generated_text"]
-                return "Hmm… I couldn't generate a response 🤔"
-            else:
-                return f"GPT request failed with status {resp.status}"
+        try:
+            async with session.post(url, headers=headers, json=payload, timeout=60) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    if isinstance(data, list) and "generated_text" in data[0]:
+                        return data[0]["generated_text"]
+                    elif isinstance(data, dict) and "error" in data:
+                        return f"GPT Error: {data['error']}"
+                    elif isinstance(data, list):
+                        return str(data[0])
+                    return "Hmm… I couldn't generate a response 🤔"
+                else:
+                    return f"GPT request failed with status {resp.status}"
+        except Exception as e:
+            return f"GPT request failed: {e}"
 
 # ======================
 # Discord Message Handler
