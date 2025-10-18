@@ -3,6 +3,9 @@ from datetime import datetime, timedelta
 import pytz
 from discord.ext import tasks
 
+# ========================
+# 📜 Liste der Fragen
+# ========================
 questions = [
     "What's your favorite game?", "What's your dream vacation?", "If you could have any superpower, what would it be?",
     "What's your favorite movie?", "What's a skill you want to learn?", "What's your favorite book?",
@@ -26,8 +29,11 @@ questions = [
 def get_random_topic():
     return random.choice(questions)
 
+# ========================
+# ⚡ Chat Reviver Klasse
+# ========================
 class ChatReviver:
-    def __init__(self, bot, channel_id, inactivity_hours=1,5, night_start=22, night_end=8, timezone="Europe/Berlin"):
+    def __init__(self, bot, channel_id, inactivity_hours=1.5, night_start=22, night_end=8, timezone="Europe/Berlin"):
         self.bot = bot
         self.channel_id = channel_id
         self.inactivity_hours = inactivity_hours
@@ -41,16 +47,23 @@ class ChatReviver:
         now = datetime.now(pytz.timezone(self.timezone))
         hour = now.hour
 
-        # Night mode
+        # 🌙 Nightmode aktiv → nichts senden
         if self.night_start <= hour or hour < self.night_end:
             return
 
+        # ⏳ Checke ob 1,5 Stunden Inaktivität erreicht sind
         if (now - self.last_activity) > timedelta(hours=self.inactivity_hours):
             channel = self.bot.get_channel(self.channel_id)
             if channel:
-                await channel.send(f"@chat revive, here's a question: {get_random_topic()}")
+                # 📢 Ping Rolle (wenn vorhanden)
+                role = next((r for r in channel.guild.roles if r.name.lower() == "chat revive"), None)
+                if role:
+                    await channel.send(f"{role.mention}, here's a question: {get_random_topic()}")
+                else:
+                    await channel.send(f"@chat revive (role not found), here's a question: {get_random_topic()}")
 
     def update_activity(self):
+        """Wird aufgerufen, wenn jemand schreibt → Timer resetten."""
         self.last_activity = datetime.now(pytz.timezone(self.timezone))
 
     async def start(self):
