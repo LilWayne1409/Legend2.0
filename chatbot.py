@@ -239,9 +239,7 @@ r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b
     ]
 }
 
-
-
-# ---- Store last messages per channel for context ----
+# ---- Letzte Nachrichten pro Channel speichern ----
 last_messages = {}  # key = channel id, value = deque(maxlen=5)
 
 # ---- GPT Fallback ----
@@ -276,37 +274,35 @@ def get_keyword_response(message: str, channel_id: int) -> str | None:
         last_messages[channel_id] = deque(maxlen=5)
     last_messages[channel_id].append(msg)
 
-    for pattern, replies in keywords.items():
+    for pattern, replies in responses.items():
         if re.search(pattern, msg):
             return random.choice(replies)
     return None  # Kein Keyword → GPT fallback
 
 # ---- Main Handle Message ----
-MAX_MESSAGE_LENGTH = 200  # Limit pro Nachricht
-
-async def handle_message(message: discord.Message):
+async def handle_message(message: "discord.Message"):
     if message.author.bot:
         return
 
-    # Only respond to mentions
+    # Nur auf Erwähnungen reagieren
     if not (message.mentions and message.guild.me in message.mentions):
         return
 
-    # Remove bot mention from message
+    # Bot-Erwähnung aus der Nachricht entfernen
     content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
 
-    # Truncate if too long
+    # Kürzen, falls Nachricht zu lang
     if len(content) > MAX_MESSAGE_LENGTH:
         content = content[:MAX_MESSAGE_LENGTH] + "..."
         await message.reply("⚠️ Your message was too long and has been shortened to be processed.")
 
-    # ---- Keywords ----
+    # ---- Keywords prüfen ----
     response = get_keyword_response(content, message.channel.id)
     if response:
         await message.reply(response)
         return
 
-    # ---- Special Responses ----
+    # ---- Spezielle Antworten ----
     if content.lower() == "yes":
         await message.reply("Type !rps for a normal round or !rps_bo3 for Best of 3! 🕹")
         return
