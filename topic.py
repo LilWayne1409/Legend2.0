@@ -27,7 +27,7 @@ def get_random_topic():
     return random.choice(questions)
 
 class ChatReviver:
-    def __init__(self, bot, channel_id, inactivity_hours=2, night_start=22, night_end=8, timezone="Europe/Berlin"):
+    def __init__(self, bot, channel_id, inactivity_hours=1,5, night_start=22, night_end=8, timezone="Europe/Berlin"):
         self.bot = bot
         self.channel_id = channel_id
         self.inactivity_hours = inactivity_hours
