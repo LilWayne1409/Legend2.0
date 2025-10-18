@@ -104,7 +104,7 @@ responses = {
     # ===== Help / Commands =====
     r"\bcan you help me\b|\bhelp\b|\bwhat can i do\b|\binstructions\b|\bguide\b": [
         "Sure! Try commands like !topic, !rps, or !rps_bo3 🎲",
-        "I can explain commands if you want! 😄",
+        "I can explain commands if you want or use !info 😄",
         "Ask me anything, I’ll do my best to answer!",
         "Commands like !topic, !rps, or !info work great!"
     ],
@@ -116,14 +116,6 @@ responses = {
         "🤣 I can relate!",
         "Wow indeed! 😲",
         "That’s really cool! 😎"
-    ],
-
-    # ===== Trivia / Fun =====
-    r"\btell me a joke\b|\banother joke\b|\btell me an interesting fact\b|\binteresting fact\b": [
-        "Why did the scarecrow win an award? Because he was outstanding in his field! 🌾",
-        "Fun fact: Octopuses have three hearts! 🐙",
-        "Did you know? Bananas are berries! 🍌",
-        "Why don’t scientists trust atoms? Because they make up everything! 😆"
     ],
 
     # ===== Greetings / Tageszeit =====
