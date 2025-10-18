@@ -1,11 +1,17 @@
 import os
+import re
 import random
 import discord
-import re
 import aiohttp
 from collections import deque
-from rps import start_rps_game
-from topic import get_random_topic
+from topic import get_random_topic  # Optional, wenn du Topics willst
+
+HF_KEY = os.environ.get("HF_API_KEY")
+if not HF_KEY:
+    print("❌ HF_API_KEY nicht gesetzt!")
+    exit()
+
+HEADERS = {"Authorization": f"Bearer {HF_KEY}"}
 # ======================
 # Keyword-Response Mapping
 # ======================
@@ -234,55 +240,65 @@ r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b
 }
 
 # ======================
-# Kontext für Nachrichten
+# Letzte Nachrichten pro Channel speichern (Kontext)
 # ======================
-last_messages = {}  # channel_id -> deque(maxlen=5)
-
-def store_context(channel_id: int, message: str):
-    if channel_id not in last_messages:
-        last_messages[channel_id] = deque(maxlen=5)
-    last_messages[channel_id].append(message.lower())
+last_messages = {}  # key = channel id, value = deque(maxlen=5)
 
 # ======================
-# GPT Fallback
+# GPT-Fallback über Hugging Face
 # ======================
 async def gpt_fallback(prompt: str) -> str:
-    if not HF_KEY:
-        return "GPT is not configured! Please set your HF_API_KEY."
-    
-    url = "https://api-inference.huggingface.co/models/gpt2"
-    headers = {"Authorization": f"Bearer {HF_KEY}"}
-    payload = {"inputs": prompt, "options": {"wait_for_model": True}}
-
     async with aiohttp.ClientSession() as session:
-        try:
-            async with session.post(url, headers=headers, json=payload, timeout=60) as resp:
-                if resp.status == 200:
-                    data = await resp.json()
-                    if isinstance(data, list) and "generated_text" in data[0]:
-                        return data[0]["generated_text"]
-                    elif isinstance(data, dict) and "error" in data:
-                        return f"GPT Error: {data['error']}"
-                    elif isinstance(data, list):
-                        return str(data[0])
-                    return "Hmm… I couldn't generate a response 🤔"
-                else:
-                    return f"GPT request failed with status {resp.status}"
-        except Exception as e:
-            return f"GPT request failed: {e}"
+        payload = {
+            "inputs": prompt,
+            "parameters": {"max_new_tokens": 60},
+        }
+        async with session.post(
+            "https://api-inference.huggingface.co/models/gpt2",
+            headers=HEADERS,
+            json=payload
+        ) as resp:
+            if resp.status == 200:
+                data = await resp.json()
+                # Ergebnis extrahieren
+                if isinstance(data, list) and "generated_text" in data[0]:
+                    return data[0]["generated_text"]
+                return "Sorry, I couldn't generate a response 😅"
+            else:
+                return f"Error contacting GPT model: {resp.status}"
 
 # ======================
-# Discord Message Handler
+# Antwortfunktion
+# ======================
+def get_keyword_response(message: str, channel_id: int) -> str | None:
+    msg = message.lower()
+
+    if channel_id not in last_messages:
+        last_messages[channel_id] = deque(maxlen=5)
+    last_messages[channel_id].append(msg)
+
+    for pattern, replies in responses.items():
+        if re.search(pattern, msg):
+            return random.choice(replies)
+    return None  # Kein Keyword gefunden → GPT fallback
+
+# ======================
+# Hauptfunktion für on_message
 # ======================
 async def handle_message(message: discord.Message):
     if message.author.bot:
         return
 
     if not message.guild or not (message.mentions and message.guild.me in message.mentions):
-        return  # Reagiere nur auf Erwähnungen
+        return  # Nur auf Erwähnung reagieren
 
     content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
-    store_context(message.channel.id, content)
+
+    # Simple Keywords
+    response = get_keyword_response(content, message.channel.id)
+    if response:
+        await message.reply(response)
+        return
 
     # Spezielle Antworten
     if content.lower() == "yes":
@@ -294,16 +310,6 @@ async def handle_message(message: discord.Message):
         await message.reply(f"Here's a topic for you: {topic}")
         return
 
-    # ======================
-    # Keyword-Responder
-    # ======================
-    for pattern, replies in responses.items():
-        if re.search(pattern, content, re.IGNORECASE):
-            await message.reply(random.choice(replies))
-            return  # Keyword gefunden → Antwort gesendet
-
-    # ======================
-    # GPT Fallback
-    # ======================
-    response = await gpt_fallback(content)
-    await message.reply(response)
+    # Fallback GPT
+    gpt_response = await gpt_fallback(content)
+    await message.reply(gpt_response)
