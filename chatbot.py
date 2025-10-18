@@ -234,68 +234,58 @@ r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b
     ]
 }
 
-# ======================
-# Letzte Nachrichten pro Channel speichern (Kontext)
-# ======================
-last_messages = {}  # key = channel id, value = deque(maxlen=5)
 
-# ======================
-# GPT-Fallback über Hugging Face
-# ======================
+# GPT-Fallback mit OpenRouter
 async def gpt_fallback(prompt: str) -> str:
-    async with aiohttp.ClientSession() as session:
-        payload = {
-            "inputs": prompt,
-            "parameters": {"max_new_tokens": 60},
-        }
-        async with session.post(
-            "https://api-inference.huggingface.co/models/gpt2",
-            headers=HEADERS,
-            json=payload
-        ) as resp:
-            if resp.status == 200:
-                data = await resp.json()
-                # Ergebnis extrahieren
-                if isinstance(data, list) and "generated_text" in data[0]:
-                    return data[0]["generated_text"]
-                return "Sorry, I couldn't generate a response 😅"
-            else:
-                return f"Error contacting GPT model: {resp.status}"
+    if not OPENROUTER_KEY:
+        return "API key not set!"
 
-# ======================
-# Antwortfunktion
-# ======================
+    headers = {"Authorization": f"Bearer {OPENROUTER_KEY}", "Content-Type": "application/json"}
+    payload = {
+        "model": "gpt-3.5-turbo",
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 150
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(OPENROUTER_URL, headers=headers, json=payload) as resp:
+            if resp.status != 200:
+                return f"Error contacting GPT model: {resp.status}"
+            data = await resp.json()
+            try:
+                return data["choices"][0]["message"]["content"]
+            except:
+                return "Error reading GPT response"
+
+# Funktion für Keyword-Antworten
 def get_keyword_response(message: str, channel_id: int) -> str | None:
     msg = message.lower()
-
     if channel_id not in last_messages:
         last_messages[channel_id] = deque(maxlen=5)
     last_messages[channel_id].append(msg)
 
-    for pattern, replies in responses.items():
+    for pattern, replies in keywords.items():
         if re.search(pattern, msg):
             return random.choice(replies)
-    return None  # Kein Keyword gefunden → GPT fallback
+    return None
 
-# ======================
 # Hauptfunktion für on_message
-# ======================
 async def handle_message(message: discord.Message):
     if message.author.bot:
         return
 
     if not message.guild or not (message.mentions and message.guild.me in message.mentions):
-        return  # Nur auf Erwähnung reagieren
+        return  # Nur reagieren, wenn Bot erwähnt wird
 
     content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
 
-    # Simple Keywords
+    # ---- Keyword-Antworten ----
     response = get_keyword_response(content, message.channel.id)
     if response:
         await message.reply(response)
         return
 
-    # Spezielle Antworten
+    # ---- Spezielle Antworten ----
     if content.lower() == "yes":
         await message.reply("Type !rps for a normal round or !rps_bo3 for Best of 3! 🕹")
         return
@@ -305,6 +295,6 @@ async def handle_message(message: discord.Message):
         await message.reply(f"Here's a topic for you: {topic}")
         return
 
-    # Fallback GPT
+    # ---- Fallback GPT ----
     gpt_response = await gpt_fallback(content)
     await message.reply(gpt_response)
