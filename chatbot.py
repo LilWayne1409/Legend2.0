@@ -1,10 +1,11 @@
+import os
 import random
 import discord
 import re
+import aiohttp
 from collections import deque
-from rps import start_rps_game  # Deine RPS-Funktion
-from topic import get_random_topic  # Funktion aus topic.py
-
+from rps import start_rps_game
+from topic import get_random_topic
 # ======================
 # Keyword-Response Mapping
 # ======================
