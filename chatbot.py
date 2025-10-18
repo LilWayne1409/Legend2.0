@@ -4,12 +4,11 @@ import random
 import aiohttp
 from collections import deque
 from topic import get_random_topic  # topic.py import
-from rps import start_rps_game  # nur falls du es brauchst
-
 
 # ===== ENV =====
 OPENROUTER_KEY = os.environ.get("OPENROUTER_KEY")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+
 # ======================
 # Keyword-Response Mapping
 # ======================
@@ -239,10 +238,19 @@ r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b
 
 
 
-# ===== Letzte Nachrichten pro Channel =====
+# ======================
+# ==== SPEZIELLE KEYWORDS / FAVORITES UNTEN ====
+# ======================
+special_responses = {
+    # Hier unten Keywords oder feste Antworten eintragen
+    r"\bgive me a topic\b": lambda: f"Here's a topic: {get_random_topic()}",
+    r"\byes\b": "Type !rps for a normal round or !rps_bo3 for Best of 3! 🕹",
+}
+
+# ---- Letzte Nachrichten pro Channel speichern (Kontext) ----
 last_messages = {}  # key = channel id, value = deque(maxlen=5)
 
-# ===== GPT Fallback =====
+# ---- GPT Fallback ----
 async def gpt_fallback(prompt: str) -> str:
     if not OPENROUTER_KEY:
         return "API key not set!"
@@ -254,57 +262,49 @@ async def gpt_fallback(prompt: str) -> str:
         "max_tokens": 150
     }
 
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(OPENROUTER_URL, headers=headers, json=payload) as resp:
-                if resp.status != 200:
-                    return f"Error contacting GPT model: {resp.status}"
-                data = await resp.json()
+    async with aiohttp.ClientSession() as session:
+        async with session.post(OPENROUTER_URL, headers=headers, json=payload) as resp:
+            if resp.status != 200:
+                return f"Error contacting GPT model: {resp.status}"
+            data = await resp.json()
+            try:
                 return data["choices"][0]["message"]["content"]
-    except Exception as e:
-        return f"Error: {str(e)}"
+            except:
+                return "Error reading GPT response"
 
-# ===== Keyword Antwort =====
+# ---- Keyword Response Funktion ----
 def get_keyword_response(message: str, channel_id: int) -> str | None:
-    global last_messages
     msg = message.lower()
-
     if channel_id not in last_messages:
         last_messages[channel_id] = deque(maxlen=5)
     last_messages[channel_id].append(msg)
 
-    for pattern, replies in keywords.items():
+    # Obere Keywords prüfen
+    for pattern, replies in responses.items():
         if re.search(pattern, msg):
             return random.choice(replies)
-    return None
 
-# ===== Handle Message =====
+    # Spezielle Keywords prüfen
+    for pattern, reply in special_responses.items():
+        if re.search(pattern, msg):
+            return reply() if callable(reply) else reply
+
+    return None  # Kein Keyword → GPT fallback
+
+# ---- Haupt Handle Message ----
 async def handle_message(message: "discord.Message"):
     if message.author.bot:
         return
 
-    # Nur reagieren, wenn Bot erwähnt wird
-    if not message.guild or not (message.mentions and message.guild.me in message.mentions):
-        return
-
+    # Nachrichteninhalt ohne Bot-Mention
     content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
 
-    # ---- Keywords ----
+    # Keyword prüfen
     response = get_keyword_response(content, message.channel.id)
     if response:
         await message.reply(response)
         return
 
-    # ---- Spezielle Antworten ----
-    if content.lower() == "yes":
-        await message.reply("Type !rps for a normal round or !rps_bo3 for Best of 3! 🕹")
-        return
-
-    if "give me a topic" in content.lower():
-        topic = get_random_topic()
-        await message.reply(f"Here's a topic for you: {topic}")
-        return
-
-    # ---- GPT Fallback ----
+    # GPT Fallback
     gpt_response = await gpt_fallback(content)
     await message.reply(gpt_response)
