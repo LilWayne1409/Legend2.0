@@ -236,6 +236,11 @@ r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b
         "Cats are cute 🐱",
         "Dogs! 🐶",
         "Honestly? Dragons would be cool if they were real 🐉"
+    ],
+    
+        # ===== Topic Request =====
+    r"\bgive me a topic\b|\btopic pls\b|\bsend me a topic\b|\brandom topic\b": [
+        lambda: get_random_topic()  # ruft Funktion aus topic.py auf
     ]
 }
 
