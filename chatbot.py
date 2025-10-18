@@ -246,19 +246,14 @@ r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b
 
 # ---- Letzte Nachrichten pro Channel speichern ----
 last_messages = {}  # key = channel id, value = deque(maxlen=5)
-
-# ---- Max chars pro Nachricht ----
-MAX_MESSAGE_LENGTH = 200
+MAX_MESSAGE_LENGTH = 200  # Limit pro Nachricht
 
 # ---- GPT Fallback ----
 async def gpt_fallback(prompt: str) -> str:
     if not OPENROUTER_KEY:
         return "API key not set!"
 
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_KEY}",
-        "Content-Type": "application/json"
-    }
+    headers = {"Authorization": f"Bearer {OPENROUTER_KEY}", "Content-Type": "application/json"}
     payload = {
         "model": "gpt-3.5-turbo",
         "messages": [{"role": "user", "content": prompt}],
@@ -282,30 +277,34 @@ def get_keyword_response(message: str, channel_id: int) -> str | None:
         last_messages[channel_id] = deque(maxlen=5)
     last_messages[channel_id].append(msg)
 
-    # Überprüfe alle Keywords
-    for pattern, replies in responses.items():  # responses musst du selbst definieren
+    for pattern, replies in responses.items():
         if re.search(pattern, msg):
-            return random.choice(replies)
-    return None  # Kein Keyword → GPT Fallback
+            reply = random.choice(replies)
+            # Wenn es eine Funktion ist (Lambda z. B. für Topic), dann ausführen
+            if callable(reply):
+                return reply()
+            return reply
+
+    return None  # Kein Keyword → GPT fallback
 
 # ---- Haupt Handle Message ----
 async def handle_message(message: "discord.Message"):
     if message.author.bot:
         return
 
-    # ---- Nur auf Bot-Erwähnung reagieren ----
+    # ---- NUR auf Bot-Erwähnung reagieren ----
     if not (message.mentions and message.guild.me in message.mentions):
         return
 
-    # ---- Nachrichteninhalt ohne Bot-Mention ----
+    # Nachrichteninhalt ohne Bot-Mention
     content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
 
-    # ---- Nachricht kürzen, falls zu lang ----
+    # Nachricht kürzen, falls zu lang
     if len(content) > MAX_MESSAGE_LENGTH:
         content = content[:MAX_MESSAGE_LENGTH] + "..."
         await message.reply("⚠️ Your message was too long and has been shortened.")
 
-    # ---- Keyword prüfen ----
+    # ---- Keywords prüfen ----
     response = get_keyword_response(content, message.channel.id)
     if response:
         await message.reply(response)
