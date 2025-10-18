@@ -1,17 +1,12 @@
 import os
 import re
-import random
 import discord
 import aiohttp
-from collections import deque
-from topic import get_random_topic  # Optional, wenn du Topics willst
 
-HF_KEY = os.environ.get("HF_API_KEY")
-if not HF_KEY:
-    print("❌ HF_API_KEY nicht gesetzt!")
-    exit()
+# ==== OpenRouter Key ====
+OPENROUTER_KEY = os.environ.get("OPENROUTER_API_KEY")
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-HEADERS = {"Authorization": f"Bearer {HF_KEY}"}
 # ======================
 # Keyword-Response Mapping
 # ======================
