@@ -229,17 +229,6 @@ r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b
         "Cats are cute 🐱",
         "Dogs! 🐶",
         "Honestly? Dragons would be cool if they were real 🐉"
-    ],
-
-    # ===== Fallback =====
-    r".*": [
-        "Hmm… I didn't quite get that 🤔",
-        "Interesting 😄",
-        "Tell me more 👀",
-        "Sounds exciting!",
-        "Oh really? That’s cool!",
-        "Can you elaborate a bit?",
-        "Haha, I get it 😄"
     ]
 }
 
