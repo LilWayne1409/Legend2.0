@@ -41,6 +41,7 @@ class ChatReviver:
         self.night_end = night_end
         self.timezone = timezone
         self.last_activity = datetime.now(pytz.timezone(self.timezone))
+        self.last_ping = None  # Cooldown für Pings
 
     @tasks.loop(minutes=10)
     async def check_inactivity(self):
@@ -51,19 +52,22 @@ class ChatReviver:
         if self.night_start <= hour or hour < self.night_end:
             return
 
-        # ⏳ Checke ob 1,5 Stunden Inaktivität erreicht sind
+        # ⏳ Prüfen, ob Inaktivität > 1,5h
         if (now - self.last_activity) > timedelta(hours=self.inactivity_hours):
-            channel = self.bot.get_channel(self.channel_id)
-            if channel:
-                # 📢 Ping Rolle (wenn vorhanden)
-                role = next((r for r in channel.guild.roles if r.name.lower() == "chat revive"), None)
-                if role:
-                    await channel.send(f"{role.mention}, here's a question: {get_random_topic()}")
-                else:
-                    await channel.send(f"@chat revive (role not found), here's a question: {get_random_topic()}")
+            # 🔒 Prüfen, ob Cooldown abgelaufen
+            if not self.last_ping or (now - self.last_ping) > timedelta(hours=self.inactivity_hours):
+                channel = self.bot.get_channel(self.channel_id)
+                if channel:
+                    # 📢 Ping Rolle (wenn vorhanden)
+                    role = next((r for r in channel.guild.roles if r.name.lower() == "chat revive"), None)
+                    if role:
+                        await channel.send(f"{role.mention}, here's a question: {get_random_topic()}")
+                    else:
+                        await channel.send(f"@chat revive (role not found), here's a question: {get_random_topic()}")
+                self.last_ping = now  # Cooldown starten
 
     def update_activity(self):
-        """Wird aufgerufen, wenn jemand schreibt → Timer resetten."""
+        """Wird aufgerufen, wenn ein Nutzer schreibt → Timer resetten."""
         self.last_activity = datetime.now(pytz.timezone(self.timezone))
 
     async def start(self):
