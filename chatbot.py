@@ -9,6 +9,9 @@ from topic import get_random_topic  # topic.py import
 OPENROUTER_KEY = os.environ.get("OPENROUTER_KEY")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
+# ===== MAX CHARS pro Nachricht =====
+MAX_CHARS = 200
+
 # ======================
 # Keyword-Response Mapping
 # ======================
@@ -238,16 +241,7 @@ r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b
 
 
 
-# ======================
-# ==== SPEZIELLE KEYWORDS / FAVORITES UNTEN ====
-# ======================
-special_responses = {
-    # Hier unten Keywords oder feste Antworten eintragen
-    r"\bgive me a topic\b": lambda: f"Here's a topic: {get_random_topic()}",
-    r"\byes\b": "Type !rps for a normal round or !rps_bo3 for Best of 3! 🕹",
-}
-
-# ---- Letzte Nachrichten pro Channel speichern (Kontext) ----
+# ---- Store last messages per channel for context ----
 last_messages = {}  # key = channel id, value = deque(maxlen=5)
 
 # ---- GPT Fallback ----
@@ -255,7 +249,10 @@ async def gpt_fallback(prompt: str) -> str:
     if not OPENROUTER_KEY:
         return "API key not set!"
 
-    headers = {"Authorization": f"Bearer {OPENROUTER_KEY}", "Content-Type": "application/json"}
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_KEY}",
+        "Content-Type": "application/json"
+    }
     payload = {
         "model": "gpt-3.5-turbo",
         "messages": [{"role": "user", "content": prompt}],
@@ -279,32 +276,46 @@ def get_keyword_response(message: str, channel_id: int) -> str | None:
         last_messages[channel_id] = deque(maxlen=5)
     last_messages[channel_id].append(msg)
 
-    # Obere Keywords prüfen
-    for pattern, replies in responses.items():
+    for pattern, replies in keywords.items():
         if re.search(pattern, msg):
             return random.choice(replies)
-
-    # Spezielle Keywords prüfen
-    for pattern, reply in special_responses.items():
-        if re.search(pattern, msg):
-            return reply() if callable(reply) else reply
-
     return None  # Kein Keyword → GPT fallback
 
-# ---- Haupt Handle Message ----
-async def handle_message(message: "discord.Message"):
+# ---- Main Handle Message ----
+MAX_MESSAGE_LENGTH = 200  # Limit pro Nachricht
+
+async def handle_message(message: discord.Message):
     if message.author.bot:
         return
 
-    # Nachrichteninhalt ohne Bot-Mention
+    # Only respond to mentions
+    if not (message.mentions and message.guild.me in message.mentions):
+        return
+
+    # Remove bot mention from message
     content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
 
-    # Keyword prüfen
+    # Truncate if too long
+    if len(content) > MAX_MESSAGE_LENGTH:
+        content = content[:MAX_MESSAGE_LENGTH] + "..."
+        await message.reply("⚠️ Your message was too long and has been shortened to be processed.")
+
+    # ---- Keywords ----
     response = get_keyword_response(content, message.channel.id)
     if response:
         await message.reply(response)
         return
 
-    # GPT Fallback
+    # ---- Special Responses ----
+    if content.lower() == "yes":
+        await message.reply("Type !rps for a normal round or !rps_bo3 for Best of 3! 🕹")
+        return
+
+    if "give me a topic" in content.lower():
+        topic = get_random_topic()
+        await message.reply(f"Here's a topic for you: {topic}")
+        return
+
+    # ---- GPT Fallback ----
     gpt_response = await gpt_fallback(content)
     await message.reply(gpt_response)
