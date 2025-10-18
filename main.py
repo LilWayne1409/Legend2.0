@@ -90,6 +90,17 @@ async def info(ctx):
         ),
         inline=False
     )
+    embed.add_field(
+        name="Other Features",
+        value=(
+            "- Responds **only when mentioned** (@Legend Bot)\n"
+            "- Keyword responses for greetings, moods, games, fun, etc.\n"
+            "- Multiple ways to ask for a topic (e.g., 'give me a topic', 'random topic')\n"
+            "- GPT fallback if your message doesn't match any keyword\n"
+            "- Auto-truncates messages longer than 200 characters"
+        ),
+        inline=False
+    )
     embed.set_footer(text="Legend Bot • Keeps Legends Active 👑")
     await ctx.send(embed=embed)
 
