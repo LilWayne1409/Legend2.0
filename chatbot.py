@@ -249,37 +249,55 @@ r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b
 last_messages = {}  # key = channel id, value = deque(maxlen=5)
 
 # ======================
-# Function to get response
+# Function: GPT Fallback
+# ======================
+async def gpt_fallback(message: str) -> str:
+    if not HF_KEY:
+        return "GPT fallback is not available. HF_API_KEY not set!"
+    headers = {"Authorization": f"Bearer {HF_KEY}"}
+    payload = {"inputs": message}
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(HF_API_URL, headers=headers, json=payload) as resp:
+                if resp.status != 200:
+                    return "GPT fallback failed 😢"
+                data = await resp.json()
+                if isinstance(data, list) and "generated_text" in data[0]:
+                    return data[0]["generated_text"]
+                elif isinstance(data, dict) and "error" in data:
+                    return f"Error: {data['error']}"
+                return str(data)
+    except Exception as e:
+        return f"GPT fallback exception: {str(e)}"
+
+# ======================
+# Get response for keywords
 # ======================
 def get_response(message: str, channel_id: int = 0) -> str:
     msg = message.lower()
-
-    # Kontext speichern
     if channel_id not in last_messages:
         last_messages[channel_id] = deque(maxlen=5)
     last_messages[channel_id].append(msg)
 
-    # Suche nach Keywords
     for pattern, replies in responses.items():
         if re.search(pattern, msg):
             return random.choice(replies)
-
-    # Fallback
-    return random.choice(responses[r".*"])
+    return random.choice(responses[r".*"])  # Fallback placeholder
 
 # ======================
 # Handle Discord Messages
 # ======================
-
 async def handle_message(message: discord.Message):
     if message.author.bot:
         return
 
+    # Reagiere nur auf Erwähnung
     if not message.guild or not (message.mentions and message.guild.me in message.mentions):
-        return  # Reagiere nur bei Erwähnung
+        return
 
     content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
 
+    # Spezielle Commands via Mention
     if content.lower() == "yes":
         await message.reply("Type !rps for a normal round or !rps_bo3 for Best of 3! 🕹")
         return
@@ -289,5 +307,12 @@ async def handle_message(message: discord.Message):
         await message.reply(f"Here's a topic for you: {topic}")
         return
 
-    response = get_response(content, message.channel.id)
+    # === Keyword Responses ===
+    for pattern, replies in responses.items():
+        if re.search(pattern, content, re.IGNORECASE):
+            await message.reply(random.choice(replies))
+            return
+
+    # === GPT Fallback ===
+    response = await gpt_fallback(content)
     await message.reply(response)
