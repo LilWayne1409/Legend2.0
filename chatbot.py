@@ -233,60 +233,51 @@ r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b
 }
 
 # ======================
-# Store last messages per channel for context
+# Kontext für Nachrichten
 # ======================
-last_messages = {}  # key = channel id, value = deque(maxlen=5)
+last_messages = {}  # channel_id -> deque(maxlen=5)
 
-# ======================
-# Function: GPT Fallback
-# ======================
-async def gpt_fallback(message: str) -> str:
-    if not HF_KEY:
-        return "GPT fallback is not available. HF_API_KEY not set!"
-    headers = {"Authorization": f"Bearer {HF_KEY}"}
-    payload = {"inputs": message}
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(HF_API_URL, headers=headers, json=payload) as resp:
-                if resp.status != 200:
-                    return "GPT fallback failed 😢"
-                data = await resp.json()
-                if isinstance(data, list) and "generated_text" in data[0]:
-                    return data[0]["generated_text"]
-                elif isinstance(data, dict) and "error" in data:
-                    return f"Error: {data['error']}"
-                return str(data)
-    except Exception as e:
-        return f"GPT fallback exception: {str(e)}"
-
-# ======================
-# Get response for keywords
-# ======================
-def get_response(message: str, channel_id: int = 0) -> str:
-    msg = message.lower()
+def store_context(channel_id: int, message: str):
     if channel_id not in last_messages:
         last_messages[channel_id] = deque(maxlen=5)
-    last_messages[channel_id].append(msg)
-
-    for pattern, replies in responses.items():
-        if re.search(pattern, msg):
-            return random.choice(replies)
-    return random.choice(responses[r".*"])  # Fallback placeholder
+    last_messages[channel_id].append(message.lower())
 
 # ======================
-# Handle Discord Messages
+# GPT-Fallback
+# ======================
+async def gpt_fallback(prompt: str) -> str:
+    if not HF_KEY:
+        return "GPT is not configured! Please set your HF_API_KEY."
+    
+    url = "https://api-inference.huggingface.co/models/gpt2"  # kleines Modell
+    headers = {"Authorization": f"Bearer {HF_KEY}"}
+    payload = {"inputs": prompt, "options": {"use_cache": False}}
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers, json=payload, timeout=60) as resp:
+            if resp.status == 200:
+                data = await resp.json()
+                # GPT2 Response extrahieren
+                if isinstance(data, list) and "generated_text" in data[0]:
+                    return data[0]["generated_text"]
+                return "Hmm… I couldn't generate a response 🤔"
+            else:
+                return f"GPT request failed with status {resp.status}"
+
+# ======================
+# Discord Message Handler
 # ======================
 async def handle_message(message: discord.Message):
     if message.author.bot:
         return
 
-    # Reagiere nur auf Erwähnung
     if not message.guild or not (message.mentions and message.guild.me in message.mentions):
-        return
+        return  # Reagiere nur auf Erwähnungen
 
     content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
+    store_context(message.channel.id, content)
 
-    # Spezielle Commands via Mention
+    # Spezielle Antworten
     if content.lower() == "yes":
         await message.reply("Type !rps for a normal round or !rps_bo3 for Best of 3! 🕹")
         return
@@ -296,12 +287,16 @@ async def handle_message(message: discord.Message):
         await message.reply(f"Here's a topic for you: {topic}")
         return
 
-    # === Keyword Responses ===
+    # ======================
+    # Keyword-Responder
+    # ======================
     for pattern, replies in responses.items():
         if re.search(pattern, content, re.IGNORECASE):
             await message.reply(random.choice(replies))
-            return
+            return  # Keyword gefunden → Antwort gesendet
 
-    # === GPT Fallback ===
+    # ======================
+    # GPT Fallback
+    # ======================
     response = await gpt_fallback(content)
     await message.reply(response)
