@@ -6,8 +6,7 @@ from dotenv import load_dotenv
 from rps import RPSView, RPSBo3View
 from topic import get_random_topic
 from chatbot import handle_message
-from chatreviver import ChatReviver  # <<< hinzugefügt
-
+from topic import ChatReviver
 # ==== ENV ====
 load_dotenv()
 TOKEN = os.environ.get("TOKEN")
