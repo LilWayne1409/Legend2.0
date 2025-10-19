@@ -1,24 +1,31 @@
 import os
+import random
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 from rps import RPSView, RPSBo3View
 from topic import get_random_topic
-from chatbot import handle_message  # dein Keyword-Responder
+from chatbot import handle_message
+from chatreviver import ChatReviver  # <<< hinzugefügt
 
 # ==== ENV ====
 load_dotenv()
 TOKEN = os.environ.get("TOKEN")
+
+# ==== CONFIG ====
+CHANNEL_ID = 123456789012345678  # 👈 dein Welcome Channel
+REVIVE_CHANNEL_ID = 987654321098765432  # 👈 dein Chat-Revive Channel (Deadchat Fragen)
 
 # ==== INTENTS ====
 intents = discord.Intents.default()
 intents.messages = True
 intents.message_content = True
 intents.guilds = True
+intents.members = True  # 👈 wichtig für on_member_join
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# ---- Welcome Messages with Bot Intro ----
+# ---- Welcome Messages ----
 welcome_messages = [
     "Hey {member}, welcome to Lagged Legends! 🎮 I’m Legend Bot 🤖, your AI companion. Try mentioning me to start a chat!",
     "Welcome, {member}! 👑 I’m Legend Bot, here to keep the server legendary. Want a topic to talk about? Just ask me!",
@@ -32,32 +39,38 @@ welcome_messages = [
     "Greetings {member}! ✨ Legend Bot here — chat with me, get random topics, or challenge me to a game. Let’s go!"
 ]
 
+# ---- Initialize Chat Reviver ----
+chat_reviver = ChatReviver(bot, REVIVE_CHANNEL_ID)
+
 # ---- Event: Member Join ----
 @bot.event
 async def on_member_join(member):
-    channel = member.guild.get_channel(CHANNEL_ID)  # Set your welcome channel ID
+    channel = member.guild.get_channel(CHANNEL_ID)
     if channel:
         message = random.choice(welcome_messages).format(member=member.mention)
         await channel.send(message)
-        
+
 # ==== EVENTS ====
 @bot.event
 async def on_ready():
     print(f"✅ Logged in as {bot.user}")
     await bot.change_presence(activity=discord.Game(name="!info"))
+    await chat_reviver.start()  # <<< Deadchat-Loop starten
 
 @bot.event
 async def on_message(message):
     if message.author.bot:
         return
 
+    # Aktivität aktualisieren für ChatReviver
+    chat_reviver.update_activity()
+
     # Prüfen, ob es ein Command ist
     ctx = await bot.get_context(message)
     if ctx.valid:
         await bot.process_commands(message)
-        return  # Wichtig: KEIN handle_message bei Commands
+        return
 
-    # Keyword-Responder reagiert nur auf Nachrichten ohne Command
     await handle_message(message)
 
 # ==== COMMANDS ====
@@ -119,7 +132,8 @@ async def info(ctx):
             "- Keyword responses for greetings, moods, games, fun, etc.\n"
             "- Multiple ways to ask for a topic (e.g., 'give me a topic', 'random topic')\n"
             "- GPT fallback if your message doesn't match any keyword\n"
-            "- Auto-truncates messages longer than 200 characters"
+            "- Auto-truncates messages longer than 200 characters\n"
+            "- **Deadchat System**: Revives the chat automatically after inactivity 👀"
         ),
         inline=False
     )
