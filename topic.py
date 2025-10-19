@@ -33,41 +33,38 @@ def get_random_topic():
 # ⚡ Chat Reviver Klasse
 # ========================
 class ChatReviver:
-    def __init__(self, bot, channel_id, inactivity_hours=1.5, night_start=22, night_end=8, timezone="Europe/Berlin"):
+    def __init__(self, bot, revive_channel_id, inactivity_hours=1.5, night_start=22, night_end=8, timezone="Europe/Berlin"):
         self.bot = bot
-        self.channel_id = channel_id
+        self.revive_channel_id = revive_channel_id
         self.inactivity_hours = inactivity_hours
         self.night_start = night_start
         self.night_end = night_end
         self.timezone = timezone
         self.last_activity = datetime.now(pytz.timezone(self.timezone))
-        self.last_ping = None  # Cooldown für Pings
+        self.last_ping = None
 
     @tasks.loop(minutes=10)
     async def check_inactivity(self):
         now = datetime.now(pytz.timezone(self.timezone))
         hour = now.hour
 
-        # 🌙 Nightmode aktiv → nichts senden
+        # 🌙 Nachtmodus aktiv
         if self.night_start <= hour or hour < self.night_end:
             return
 
-        # ⏳ Prüfen, ob Inaktivität > 1,5h
+        # ⏳ Inaktivität prüfen
         if (now - self.last_activity) > timedelta(hours=self.inactivity_hours):
-            # 🔒 Prüfen, ob Cooldown abgelaufen
             if not self.last_ping or (now - self.last_ping) > timedelta(hours=self.inactivity_hours):
-                channel = self.bot.get_channel(self.channel_id)
+                channel = self.bot.get_channel(self.revive_channel_id)
                 if channel:
-                    # 📢 Ping Rolle (wenn vorhanden)
                     role = next((r for r in channel.guild.roles if r.name.lower() == "chat revive"), None)
                     if role:
                         await channel.send(f"{role.mention}, here's a question: {get_random_topic()}")
                     else:
                         await channel.send(f"@chat revive (role not found), here's a question: {get_random_topic()}")
-                self.last_ping = now  # Cooldown starten
+                self.last_ping = now
 
     def update_activity(self):
-        """Wird aufgerufen, wenn ein Nutzer schreibt → Timer resetten."""
         self.last_activity = datetime.now(pytz.timezone(self.timezone))
 
     async def start(self):
