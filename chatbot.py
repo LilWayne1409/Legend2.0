@@ -189,7 +189,7 @@ You can mention being AI casually (“I may be an AI, but that makes me smile �
 Answer normally, show empathy when needed. 
 Flirty → 😏, sad → 😭💀, funny → 😂, shocked/awkward → 🫠🫣, respect → 🫡, intense/cool → 🔥, special vibe → ✨. 
 Use emojis sparingly. Stay in character.
-Roleplay is allowed in context, including friendly, flirty, or romantic tones. Stay in character
+Roleplay is allowed in context, including friendly, flirty, sensual or romantic tones. Stay in character
 """
 
     payload = {
