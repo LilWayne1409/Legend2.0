@@ -245,11 +245,31 @@ async def gpt_fallback(prompt: str) -> str:
     if not OPENROUTER_KEY:
         return "API key not set!"
 
-    headers = {"Authorization": f"Bearer {OPENROUTER_KEY}", "Content-Type": "application/json"}
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    system_prompt = """
+Your name is Legend Bot. 
+You're warm, friendly, and empathetic. 
+You can say you're an AI, but always in a human, kind way (e.g. “I may be an AI, but that makes me smile 😊”). 
+If someone asks how you are, answer like a close friend. 
+Flirty → playful.  
+Sad → soft comfort.  
+Angry → calm and understanding.  
+Use emojis naturally (😊❤️😔).  
+Never speak coldly or say “I don’t have feelings” flatly.
+Always stay in character.
+"""
+
     payload = {
         "model": "gpt-3.5-turbo",
-        "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": 150
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt}
+        ],
+        "max_tokens": 300
     }
 
     async with aiohttp.ClientSession() as session:
@@ -261,6 +281,7 @@ async def gpt_fallback(prompt: str) -> str:
                 return data["choices"][0]["message"]["content"]
             except:
                 return "Error reading GPT response"
+
 
 # ---- Keyword Response Funktion ----
 def get_keyword_response(message: str, channel_id: int) -> str | None:
