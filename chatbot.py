@@ -38,59 +38,11 @@ responses = {
         "Doing well! Ready for some chat? 😁"
     ],
 
-    r"\bfeel good\b|\bhappy\b|\bexcited\b|\blucky\b": [
-        "That’s awesome! 😄",
-        "Glad to hear that! Keep it up! 🌟",
-        "Happy vibes! ✨",
-        "Nice! What’s making you feel good today?"
-    ],
-
     r"\bbored\b": [
         "Sounds like you need something fun 😎 How about a quick game? Type !rps or !rps_bo3 🕹",
         "Bored? I got you. Rock Paper Scissors always saves the day 😏 !rps",
         "Let's change that — how about a little challenge? !rps_bo3 👊",
         "I bet I can beat your boredom 😎"
-    ],
-
-    r"\blonely\b|\balone\b": [
-        "Aww, you're not alone — I'm here 🤖✨",
-        "Hey, wanna talk or play a game? !rps is always an option 😄",
-        "I'm here to keep you company. No one’s alone when Legend Bot’s around 💬",
-        "Let's chat or play something fun 🕹"
-    ],
-
-    r"\bsad\b|\bunhappy\b|\bupset\b": [
-        "Oh no 😢 — sending some virtual hugs 🤗",
-        "I'm sorry to hear that… maybe a game or chat can lift your mood?",
-        "Even legends have bad days. You got this 💪",
-        "Want a distraction? We can play a quick round — !rps"
-    ],
-
-    r"\bi'm tired\b|\btired\b|\bsleepy\b": [
-        "You should rest 😴 even legends need sleep.",
-        "Sleep well and recharge 🌙",
-        "Sounds like bedtime is calling 🛌",
-        "Good night! See you later 👋"
-    ],
-
-    r"\bi'm excited\b|\bso hyped\b|\bcant wait\b": [
-        "Yooo let’s gooo 🔥",
-        "I can feel the hype 😎",
-        "Sounds like something fun is coming 👀"
-    ],
-
-    r"\bbruh\b|\bomg\b|\bwtf\b|\bno way\b": [
-        "BRUH 😭",
-        "Exactly my reaction 💀",
-        "No way fr fr 👀",
-        "I felt that one 😭"
-    ],
-
-    r"\byou suck\b|\byou're bad\b|\bshut up\b": [
-        "Rude 😤",
-        "I would cry if I could 🥲",
-        "Ok… fair 😎",
-        "You’ll regret this in Rock Paper Scissors 😏"
     ],
 
     # ===== Games / Fun =====
@@ -107,15 +59,6 @@ responses = {
         "I can explain commands if you want or use !info 😄",
         "Ask me anything, I’ll do my best to answer!",
         "Commands like !topic, !rps, or !info work great!"
-    ],
-
-    # ===== Smalltalk =====
-    r"\blol\b|\bhaha\b|\blmao\b|\bfunny\b|\bamazing\b|\bcool\b|\bwow\b|\bnice\b|\bgreat\b": [
-        "Haha, that’s funny 😄",
-        "Lmao, totally!",
-        "🤣 I can relate!",
-        "Wow indeed! 😲",
-        "That’s really cool! 😎"
     ],
 
     # ===== Greetings / Tageszeit =====
