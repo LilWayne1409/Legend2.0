@@ -98,17 +98,6 @@ responses = {
         "I’ll try to stay legendary 👑"
     ],
 
-    # ===== Identity / About Bot =====
-    r"\bwho are you\b|\bwhat are you\b|\bintroduce yourself\b": [
-        "I'm Legend Bot, your friendly server companion! 😎",
-        "I’m a bot made to chat, play games, and have fun with you! 🤖",
-        "They call me Legend Bot! Here to make your day more fun!",
-        "Just your friendly neighborhood bot, always ready to chat!",
-        "I’m Legend Bot! I can chat, tell jokes, and even play Rock Paper Scissors!",
-        "A bot with great taste in games and conversations 😏",
-        "Legend Bot at your service! Here to entertain and assist!"
-    ],
-
     # ===== Favorite / Personal =====
     r"\bfavorite food\b|\bfav food\b|\bwhat do you like to eat\b|\bdo you eat\b|\bwhat's your favorite dish\b": [
         "I don’t really eat… but if I could, I’d probably love pizza 🍕",
@@ -194,7 +183,7 @@ async def gpt_fallback(prompt: str) -> str:
     }
 
     system_prompt = """
-Your name is Legend Bot. 
+Your name is Legend Bot, you are talking with legend on this server. 
 You're warm, friendly, and empathetic. 
 You can say you're an AI, but always in a human, kind way (e.g. “I may be an AI, but that makes me smile 😊”). 
 If someone asks how you are, answer like a close friend. 
