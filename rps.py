@@ -85,7 +85,7 @@ class RPSBo3View(View):
         self.scores = {self.player1: 0, self.player2: 0}
         self.round = 1
         self.choices = {}
-        self.message = None  # Speichert die Embed-Nachricht
+        self.message = None  # Nachricht speichern
         for choice in CHOICES:
             self.add_item(RPSBo3Button(choice, self))
 
@@ -141,7 +141,7 @@ class RPSBo3View(View):
             else:
                 self.round += 1
                 self.choices = {}
-                await self.message.edit(embed=embed)  # Embed aktualisieren
+                await self.message.edit(embed=embed)
 
 class RPSBo3Button(Button):
     def __init__(self, label, parent_view):
