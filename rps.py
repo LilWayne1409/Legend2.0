@@ -214,5 +214,5 @@ async def start_rps_bo3(ctx, opponent: discord.Member = None):
         color=discord.Color.blurple()
     )
 
-    # Nachricht senden und in der View speichern
-    view.message = await ctx.send(embed=embed, view=view)
+    message = await ctx.send(embed=embed, view=view)
+    view.message = message
