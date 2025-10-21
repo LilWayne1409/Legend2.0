@@ -13,7 +13,7 @@ TOKEN = os.environ.get("TOKEN")
 
 # ==== CONFIG ====
 CHANNEL_ID = 123456789012345678  # 👈 dein Welcome Channel
-REVIVE_CHANNEL_ID = 987654321098765432  # 👈 dein Chat-Revive Channel (Deadchat Fragen)
+REVIVE_CHANNEL_ID = 1419352213607809046  # 👈 dein Chat-Revive Channel (Deadchat Fragen)
 
 # ==== INTENTS ====
 intents = discord.Intents.default()
