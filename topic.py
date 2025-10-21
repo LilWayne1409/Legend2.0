@@ -49,34 +49,29 @@ class ChatReviver:
         now = datetime.now(pytz.timezone(self.timezone))
         hour = now.hour
 
-        # 🌙 Nachtmodus aktiv
+        # Nachtmodus
         if self.night_start <= hour or hour < self.night_end:
             return
 
-        # ⏳ Inaktivität prüfen
         if (now - self.last_activity) > timedelta(hours=self.inactivity_hours):
             if not self.last_ping or (now - self.last_ping) > timedelta(hours=self.inactivity_hours):
-                channel = self.bot.get_channel(self.revive_channel_id)
-                if channel:
-                    role = next((r for r in channel.guild.roles if r.name.lower() == "chat revive"), None)
-                    if role:
-                        await channel.send(f"{role.mention}, here's a question: {get_random_topic()}")
-                    else:
-                        await channel.send(f"@chat revive (role not found), here's a question: {get_random_topic()}")
+                await self.send_deadchat_ping()
                 self.last_ping = now
 
-    # ---- NEUE METHODE für manuellen Trigger ----
-    async def trigger_revive(self):
-        """Post a deadchat question immediately, ignoring inactivity and night mode."""
+    async def send_deadchat_ping(self):
         channel = self.bot.get_channel(self.revive_channel_id)
         if channel:
-            role = next((r for r in channel.guild.roles if r.name.lower() == "chat revive"), None)
+            DEADCHAT_ROLE_ID = 1422570834836455585  # ID deiner Rolle
+            role = channel.guild.get_role(DEADCHAT_ROLE_ID)
             question = get_random_topic()
             if role:
-                await channel.send(f"{role.mention}, here's a question: {question}")
+                await channel.send(f"{role.mention} 👀 The chat looks pretty quiet... here's a topic: {question}")
             else:
-                await channel.send(f"Here's a question: {question}")
-            self.last_ping = datetime.now(pytz.timezone(self.timezone))
+                await channel.send(f"👀 The chat looks pretty quiet... here's a topic: {question}")
+
+    async def trigger_revive(self):
+        """Manually trigger Deadchat (for !revive command)"""
+        await self.send_deadchat_ping()
 
     def update_activity(self):
         self.last_activity = datetime.now(pytz.timezone(self.timezone))
