@@ -201,5 +201,4 @@ async def start_rps_bo3(ctx, opponent: discord.Member = None):
     else:
         desc += "You're playing against the Bot 🤖\nFirst to 2 wins 🏆\nMake your choice 👇"
 
-    embed = discord.Embed(title="🪨📄✂️ Rock Paper Scissors - Best of 3", description=desc, color=discord.Color.blurple())
     await view.start_game()
