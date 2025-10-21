@@ -97,22 +97,18 @@ async def revive(ctx):
         await ctx.send("❌ You don't have permission to use this command!")
         return
 
-    # Trigger Deadchat (optional, z. B. Logik aus ChatReviver)
-    await chat_reviver.trigger_revive()
-
-    # Deadchat Ping
-    DEADCHAT_ROLE_ID = 1422570834836455585  # <- deine Role ID
+    DEADCHAT_ROLE_ID = 1422570834836455585
     revive_channel = ctx.guild.get_channel(REVIVE_CHANNEL_ID)
     if revive_channel:
         role = ctx.guild.get_role(DEADCHAT_ROLE_ID)
         question = get_random_topic()
         if role:
             await revive_channel.send(
-                f"{role.mention} 👀 The chat looks pretty quiet... here's a topic: {question}"
+                f"{role.mention} 👀 The chat looks pretty quiet… here's a topic: {question}"
             )
         else:
             await revive_channel.send(
-                f"👀 The chat looks pretty quiet... here's a topic: {question}"
+                f"👀 The chat looks pretty quiet… here's a topic: {question}"
             )
     
 @bot.command()
@@ -128,10 +124,6 @@ async def ping(ctx):
 @bot.command()
 async def hello(ctx):
     await ctx.send(f"Hey {ctx.author.mention}! 👋")
-
-@bot.command()
-async def topic(ctx):
-    await ctx.send(f"💬 Random Topic:\n{get_random_topic()}")
 
 @bot.command()
 async def rps(ctx, opponent: discord.Member = None):
