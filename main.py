@@ -88,6 +88,18 @@ async def on_message(message):
 
 # ==== COMMANDS ====
 bot.command()
+async def revive(ctx):
+    """Manually trigger Deadchat for Admins, Staff, and Prestige roles."""
+    allowed_roles = ["-----------------Staff-------------------", "Legend"]
+    author_roles = [role.name for role in ctx.author.roles]
+
+    if not any(role in allowed_roles for role in author_roles):
+        await ctx.send("❌ You don't have permission to use this command!")
+        return
+
+    await chat_reviver.send_random_topic()
+    
+bot.command()
 async def test_welcome(ctx):
     member = ctx.author
     channel = ctx.guild.get_channel(CHANNEL_ID)
