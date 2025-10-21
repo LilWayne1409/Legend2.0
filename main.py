@@ -96,13 +96,15 @@ async def revive(ctx):
     if not any(role in allowed_roles for role in author_roles):
         await ctx.send("❌ You don't have permission to use this command!")
         return
-        
-        
+
+    # Trigger Deadchat (optional, z. B. Logik aus ChatReviver)
     await chat_reviver.trigger_revive()
 
+    # Deadchat Ping
+    DEADCHAT_ROLE_ID = 1422570834836455585  # <- deine Role ID
     revive_channel = ctx.guild.get_channel(REVIVE_CHANNEL_ID)
     if revive_channel:
-        role = next((r for r in ctx.guild.roles if r.name.lower() == "chat revive"), None)
+        role = ctx.guild.get_role(DEADCHAT_ROLE_ID)
         question = get_random_topic()
         if role:
             await revive_channel.send(
