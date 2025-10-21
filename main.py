@@ -73,6 +73,12 @@ async def on_message(message):
     await handle_message(message)
 
 # ==== COMMANDS ====
+bot.command()
+async def test_welcome(ctx):
+    member = ctx.author
+    channel = ctx.guild.get_channel(CHANNEL_ID)
+    await channel.send(random.choice(welcome_messages).format(member=member.mention))
+    
 @bot.command()
 async def ping(ctx):
     await ctx.send(f"Pong! 🏓 {round(bot.latency * 1000)}ms")
