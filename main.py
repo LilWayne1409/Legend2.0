@@ -44,7 +44,7 @@ chat_reviver = ChatReviver(bot, REVIVE_CHANNEL_ID)
 # ---- Event: Member Join ----
 @bot.event
 async def on_member_join(member):
-    channel = member.guild.get_channel(WELCOME_CHANNEL_ID)
+    channel = member.guild.get_channel(CHANNEL_ID)
     if channel:
         message = random.choice(welcome_messages).format(member=member.mention)
         await channel.send(message)
