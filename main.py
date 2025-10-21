@@ -49,6 +49,16 @@ async def on_member_join(member):
         message = random.choice(welcome_messages).format(member=member.mention)
         await channel.send(message)
 
+bot.event
+async def on_member_join(member):
+    print(f"🎉 New member joined: {member.name}")
+    channel = member.guild.get_channel(CHANNEL_ID)
+    if channel:
+        message = random.choice(welcome_messages).format(member=member.mention)
+        await channel.send(message)
+    else:
+        print("❌ Could not find the welcome channel!")
+        
 # ==== EVENTS ====
 @bot.event
 async def on_ready():
