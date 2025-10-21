@@ -96,8 +96,8 @@ async def revive(ctx):
     if not any(role in allowed_roles for role in author_roles):
         await ctx.send("❌ You don't have permission to use this command!")
         return
-
-await chat_reviver.trigger_revive()
+        
+    await chat_reviver.trigger_revive()
     
 @bot.command()
 async def test_welcome(ctx):
