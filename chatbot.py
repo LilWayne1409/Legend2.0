@@ -3,7 +3,7 @@ import re
 import random
 import aiohttp
 from collections import deque
-from topic import get_random_topic  # topic.py import
+from topic import get_random_topic
 
 # ===== ENV =====
 OPENROUTER_KEY = os.environ.get("OPENROUTER_KEY")
@@ -106,13 +106,15 @@ responses = {
         "Honestly? I’d try everything 😂"
     ],
 
+    # ===== Movie =====
     r"\bfavorite movie\b|\bfav movie\b|\bfavorite film\b|\bfav film\b|\bwhat movie\b": [
         "I love The Matrix — classic vibes 😎",
         "Probably Avengers, can’t beat the team-up scenes 💥",
         "I’m a big fan of action movies 🍿",
         "Anything with a good story and explosions 😆"
     ],
-
+    
+    # ===== show =====
     r"\bfavorite tv show\b|\bfav show\b|\bfavorite series\b|\bfav series\b": [
         "I’d say Stranger Things 👻",
         "Probably Breaking Bad, that’s a masterpiece 🧪",
@@ -120,6 +122,7 @@ responses = {
         "I don’t watch TV… but if I did, I’d binge something cool."
     ],
 
+    # ===== Color =====
     r"\bfavorite color\b|\bfav color\b|\bwhat color do you like\b|\bwhat's your favorite colour\b": [
         "Neon blue 💙 — fits my vibe.",
         "Purple 💜 — classy and strong.",
@@ -127,6 +130,7 @@ responses = {
         "I like anything glowing in the dark 😎"
     ],
 
+    # ===== Music =====
     r"\bfavorite music\b|\bfav music\b|\bfavorite song\b|\bfav song\b|\bfavorite band\b|\bfav band\b|\bfavorite artist\b": [
         "I love anything with a good beat 🎶",
         "Probably some chill lo-fi or EDM 🔊",
@@ -134,6 +138,7 @@ responses = {
         "Can’t pick one song, I like too many 😆"
     ],
 
+    # ===== Place =====
     r"\bfavorite place\b|\bfav place\b|\bfavorite country\b|\bfav country\b|\bwhere would you like to live\b": [
         "Tokyo would be awesome to visit 🇯🇵",
         "Somewhere with neon lights ✨",
@@ -141,6 +146,7 @@ responses = {
         "Anywhere with good vibes 😄"
     ],
 
+    # ===== Game =====
 r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b": [
         "Rock Paper Scissors of course 😎",
         "I’d say Minecraft — infinite creativity 🧱",
@@ -148,6 +154,7 @@ r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b
         "I like anything competitive 😏"
     ],
 
+    # ===== hobby =====
     r"\bfavorite hobby\b|\bfav hobby\b|\bwhat do you like to do\b|\bhow do you spend your time\b": [
         "Talking with people like you 😄",
         "Starting random conversations 😎",
@@ -155,6 +162,7 @@ r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b
         "I live for good chats ✨"
     ],
 
+    # ===== animal =====
     r"\bfavorite animal\b|\bfav animal\b|\bwhat's your favorite animal\b": [
         "I like wolves 🐺 — loyal and strong.",
         "Cats are cute 🐱",
@@ -169,8 +177,8 @@ r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b
 }
 
 # ---- Letzte Nachrichten pro Channel speichern ----
-last_messages = {}  # key = channel id, value = deque(maxlen=5)
-MAX_MESSAGE_LENGTH = 200  # Limit pro Nachricht
+last_messages = {}
+MAX_MESSAGE_LENGTH = 200
 
 # ---- GPT Fallback ----
 async def gpt_fallback(prompt: str) -> str:
@@ -222,31 +230,27 @@ def get_keyword_response(message: str, channel_id: int) -> str | None:
     for pattern, replies in responses.items():
         if re.search(pattern, msg):
             reply = random.choice(replies)
-            # Wenn es eine Funktion ist (Lambda z. B. für Topic), dann ausführen
+
             if callable(reply):
                 return reply()
             return reply
 
-    return None  # Kein Keyword → GPT fallback
+    return None
 
-# ---- Haupt Handle Message ----
+# ---- Main Handle Message ----
 async def handle_message(message: "discord.Message"):
     if message.author.bot:
         return
 
-    # ---- NUR auf Bot-Erwähnung reagieren ----
     if not (message.mentions and message.guild.me in message.mentions):
         return
 
-    # Nachrichteninhalt ohne Bot-Mention
     content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
 
-    # Nachricht kürzen, falls zu lang
     if len(content) > MAX_MESSAGE_LENGTH:
         content = content[:MAX_MESSAGE_LENGTH] + "..."
         await message.reply("⚠️ Your message was too long and has been shortened.")
 
-    # ---- Keywords prüfen ----
     response = get_keyword_response(content, message.channel.id)
     if response:
         await message.reply(response)
