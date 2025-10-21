@@ -106,11 +106,11 @@ async def revive(ctx):
         question = get_random_topic()
         if role:
             await revive_channel.send(
-                f"{role.mention} 👀 The chat looks pretty quiet... here's a question: {question}"
+                f"{role.mention} 👀 The chat looks pretty quiet... here's a topic: {question}"
             )
         else:
             await revive_channel.send(
-                f"👀 The chat looks pretty quiet... here's a question: {question}"
+                f"👀 The chat looks pretty quiet... here's a topic: {question}"
             )
     
 @bot.command()
