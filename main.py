@@ -59,6 +59,15 @@ async def on_member_join(member):
     else:
         print("❌ Could not find the welcome channel!")
         
+        @bot.command()
+async def test_join(ctx):
+    channel = ctx.guild.get_channel(CHANNEL_ID)
+    if channel:
+        await ctx.send(f"✅ Found channel: {channel.name}")
+        await channel.send(f"Simulated join for {ctx.author.mention} 🎉")
+    else:
+        await ctx.send("❌ Channel not found!")
+        
 # ==== EVENTS ====
 @bot.event
 async def on_ready():
