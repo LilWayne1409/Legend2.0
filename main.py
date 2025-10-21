@@ -21,7 +21,7 @@ intents = discord.Intents.default()
 intents.messages = True
 intents.message_content = True
 intents.guilds = True
-intents.members = True  # 👈 wichtig für on_member_join
+intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
@@ -42,7 +42,7 @@ welcome_messages = [
 # ---- Initialize Chat Reviver ----
 chat_reviver = ChatReviver(bot, REVIVE_CHANNEL_ID)
 
-# ---- Event: Member Join ----
+# ---- Test command for debugging ----
 @bot.event
 async def on_member_join(member):
     print(f"🎉 New member joined: {member.name}")
@@ -53,7 +53,6 @@ async def on_member_join(member):
     else:
         print("❌ Could not find the welcome channel!")
 
-# ---- Test command for debugging ----
 @bot.command()
 async def test_join(ctx):
     channel = ctx.guild.get_channel(CHANNEL_ID)
@@ -68,17 +67,15 @@ async def test_join(ctx):
 async def on_ready():
     print(f"✅ Logged in as {bot.user}")
     await bot.change_presence(activity=discord.Game(name="!info"))
-    await chat_reviver.start()  # <<< Deadchat-Loop starten
+    await chat_reviver.start()
 
 @bot.event
 async def on_message(message):
     if message.author.bot:
         return
 
-    # Aktivität aktualisieren für ChatReviver
     chat_reviver.update_activity()
 
-    # Prüfen, ob es ein Command ist
     ctx = await bot.get_context(message)
     if ctx.valid:
         await bot.process_commands(message)
