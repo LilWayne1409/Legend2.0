@@ -1,5 +1,6 @@
 import random
 import discord
+from discord.ext import commands
 from discord.ui import View, Button
 
 CHOICES = {
@@ -66,6 +67,7 @@ class RPSButton(Button):
         self.parent_view.choices[user] = self.label
         await interaction.response.send_message(f"You chose **{self.label}** {CHOICES[self.label]}", ephemeral=True)
 
+        # Bot wählt automatisch, falls kein Gegner
         if self.parent_view.player2 == self.parent_view.ctx.bot.user and len(self.parent_view.choices) == 1:
             bot_choice = random.choice(list(CHOICES.keys()))
             self.parent_view.choices[self.parent_view.player2] = bot_choice
@@ -85,7 +87,9 @@ class RPSBo3View(View):
         self.scores = {self.player1: 0, self.player2: 0}
         self.round = 1
         self.choices = {}
-        self.message = None  # Embed Nachricht
+        self.message = None
+
+        # Buttons direkt hinzufügen
         for choice in CHOICES:
             self.add_item(RPSBo3Button(choice, self))
 
@@ -101,6 +105,8 @@ class RPSBo3View(View):
             description=desc,
             color=discord.Color.blurple()
         )
+
+        # Nachricht senden
         self.message = await self.ctx.send(embed=embed, view=self)
 
     async def play_round(self):
@@ -139,12 +145,13 @@ class RPSBo3View(View):
             winner_text = winner.mention if winner != self.ctx.bot.user else "Bot"
             embed.title = "🏆 Final Result"
             embed.description += f"\n\n{winner_text} wins the Best of 3 match!"
-            await self.message.edit(embed=embed, view=None)  # Buttons entfernen
+            await self.message.edit(embed=embed, view=None)
             self.stop()
         else:
             self.round += 1
             self.choices = {}
-            await self.message.edit(embed=embed)  # Embed aktualisieren
+            await self.message.edit(embed=embed)
+
 
 class RPSBo3Button(Button):
     def __init__(self, label, parent_view):
@@ -152,8 +159,13 @@ class RPSBo3Button(Button):
         self.parent_view = parent_view
 
     async def callback(self, interaction: discord.Interaction):
-        user = interaction.user
+        if self.parent_view.message is None:
+            await interaction.response.send_message(
+                "⚠️ The game hasn't started yet!", ephemeral=True
+            )
+            return
 
+        user = interaction.user
         if user not in [self.parent_view.player1, self.parent_view.player2]:
             await interaction.response.send_message("❌ You're not part of this game!", ephemeral=True)
             return
@@ -162,19 +174,17 @@ class RPSBo3Button(Button):
             await interaction.response.send_message("⚠️ You already made your choice!", ephemeral=True)
             return
 
-        if self.parent_view.message is None:
-            await interaction.response.send_message("⚠️ The game hasn't started yet!", ephemeral=True)
-            return
-
         # Choice speichern und Buttons kurz deaktivieren
         self.parent_view.choices[user] = self.label
         for item in self.parent_view.children:
             item.disabled = True
         await self.parent_view.message.edit(view=self.parent_view)
 
-        await interaction.response.send_message(f"You chose **{self.label}** {CHOICES[self.label]}", ephemeral=True)
+        await interaction.response.send_message(
+            f"You chose **{self.label}** {CHOICES[self.label]}", ephemeral=True
+        )
 
-        # Bot Choice, falls kein Gegner
+        # Bot wählt automatisch, falls kein Gegner
         if self.parent_view.player2 == self.parent_view.ctx.bot.user and len(self.parent_view.choices) == 1:
             bot_choice = random.choice(list(CHOICES.keys()))
             self.parent_view.choices[self.parent_view.player2] = bot_choice
@@ -185,10 +195,14 @@ class RPSBo3Button(Button):
 
         await self.parent_view.play_round()
 
+
 # =====================
 # --- Commands ---
 # =====================
-async def start_rps_game(ctx, opponent: discord.Member = None):
+bot = commands.Bot(command_prefix="!")
+
+@bot.command()
+async def rps(ctx, opponent: discord.Member = None):
     view = RPSView(ctx, opponent)
     desc = f"{ctx.author.mention} started Rock Paper Scissors!\n"
     if opponent:
@@ -200,19 +214,7 @@ async def start_rps_game(ctx, opponent: discord.Member = None):
     await ctx.send(embed=embed, view=view)
 
 
-async def start_rps_bo3(ctx, opponent: discord.Member = None):
+@bot.command()
+async def rps_bo3(ctx, opponent: discord.Member = None):
     view = RPSBo3View(ctx, opponent)
-    desc = f"{ctx.author.mention} started **Best of 3 Rock Paper Scissors!**\n"
-    if opponent:
-        desc += f"Opponent: {opponent.mention}\nFirst to 2 wins 🏆\nMake your choice 👇"
-    else:
-        desc += "You're playing against the Bot 🤖\nFirst to 2 wins 🏆\nMake your choice 👇"
-
-    embed = discord.Embed(
-        title="🪨📄✂️ Rock Paper Scissors - Best of 3",
-        description=desc,
-        color=discord.Color.blurple()
-    )
-
-    message = await ctx.send(embed=embed, view=view)
-    view.message = message
+    await view.start_game()
