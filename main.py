@@ -97,7 +97,21 @@ async def revive(ctx):
         await ctx.send("❌ You don't have permission to use this command!")
         return
         
+        
     await chat_reviver.trigger_revive()
+
+    revive_channel = ctx.guild.get_channel(REVIVE_CHANNEL_ID)
+    if revive_channel:
+        role = next((r for r in ctx.guild.roles if r.name.lower() == "chat revive"), None)
+        question = get_random_topic()
+        if role:
+            await revive_channel.send(
+                f"{role.mention} 👀 The chat looks pretty quiet... here's a question: {question}"
+            )
+        else:
+            await revive_channel.send(
+                f"👀 The chat looks pretty quiet... here's a question: {question}"
+            )
     
 @bot.command()
 async def test_welcome(ctx):
