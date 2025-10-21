@@ -29,6 +29,7 @@ questions = [
 def get_random_topic():
     return random.choice(questions)
 
+
 # ========================
 # ⚡ Chat Reviver Klasse
 # ========================
@@ -63,6 +64,19 @@ class ChatReviver:
                     else:
                         await channel.send(f"@chat revive (role not found), here's a question: {get_random_topic()}")
                 self.last_ping = now
+
+    # ---- NEUE METHODE für manuellen Trigger ----
+    async def trigger_revive(self):
+        """Post a deadchat question immediately, ignoring inactivity and night mode."""
+        channel = self.bot.get_channel(self.revive_channel_id)
+        if channel:
+            role = next((r for r in channel.guild.roles if r.name.lower() == "chat revive"), None)
+            question = get_random_topic()
+            if role:
+                await channel.send(f"{role.mention}, here's a question: {question}")
+            else:
+                await channel.send(f"Here's a question: {question}")
+            self.last_ping = datetime.now(pytz.timezone(self.timezone))
 
     def update_activity(self):
         self.last_activity = datetime.now(pytz.timezone(self.timezone))
