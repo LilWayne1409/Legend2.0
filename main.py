@@ -97,7 +97,7 @@ async def revive(ctx):
         await ctx.send("❌ You don't have permission to use this command!")
         return
 
-    await chat_reviver.send_random_topic()
+await chat_reviver.trigger_revive()
     
 @bot.command()
 async def test_welcome(ctx):
