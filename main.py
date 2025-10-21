@@ -42,6 +42,7 @@ welcome_messages = [
 # ---- Initialize Chat Reviver ----
 chat_reviver = ChatReviver(bot, REVIVE_CHANNEL_ID)
 
+@bot.event
 async def on_member_join(member):
     print(f"🎉 New member joined: {member.name}")
 
