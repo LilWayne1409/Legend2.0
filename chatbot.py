@@ -9,7 +9,7 @@ from topic import get_random_topic
 OPENROUTER_KEY = os.environ.get("OPENROUTER_KEY")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-# ===== MAX CHARS pro Nachricht =====
+# ===== MAX CHARS =====
 MAX_CHARS = 200
 
 # ======================
@@ -176,7 +176,6 @@ r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b
     ]
 }
 
-# ---- Letzte Nachrichten pro Channel speichern ----
 last_messages = {}
 MAX_MESSAGE_LENGTH = 200
 
