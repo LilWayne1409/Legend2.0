@@ -44,13 +44,6 @@ chat_reviver = ChatReviver(bot, REVIVE_CHANNEL_ID)
 # ---- Event: Member Join ----
 @bot.event
 async def on_member_join(member):
-    channel = member.guild.get_channel(CHANNEL_ID)
-    if channel:
-        message = random.choice(welcome_messages).format(member=member.mention)
-        await channel.send(message)
-
-bot.event
-async def on_member_join(member):
     print(f"🎉 New member joined: {member.name}")
     channel = member.guild.get_channel(CHANNEL_ID)
     if channel:
@@ -58,8 +51,9 @@ async def on_member_join(member):
         await channel.send(message)
     else:
         print("❌ Could not find the welcome channel!")
-        
-        @bot.command()
+
+# ---- Test command for debugging ----
+@bot.command()
 async def test_join(ctx):
     channel = ctx.guild.get_channel(CHANNEL_ID)
     if channel:
