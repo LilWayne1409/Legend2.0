@@ -1,10 +1,11 @@
 import random
 from datetime import datetime, timedelta
 import pytz
+import asyncio
 from discord.ext import tasks
 
 # ========================
-# 📜 Liste der Fragen
+# 📜 Fragenliste
 # ========================
 questions = [
     "What's your favorite game?", "What's your dream vacation?", "If you could have any superpower, what would it be?",
@@ -29,7 +30,6 @@ questions = [
 def get_random_topic():
     return random.choice(questions)
 
-
 # ========================
 # ⚡ Chat Reviver Klasse
 # ========================
@@ -49,7 +49,7 @@ class ChatReviver:
         now = datetime.now(pytz.timezone(self.timezone))
         hour = now.hour
 
-        # Nachtmodus
+        # 🌙 Nachtmodus aktiv
         if self.night_start <= hour or hour < self.night_end:
             return
 
@@ -61,16 +61,46 @@ class ChatReviver:
     async def send_deadchat_ping(self):
         channel = self.bot.get_channel(self.revive_channel_id)
         if channel:
-            DEADCHAT_ROLE_ID = 1422570834836455585  # ID deiner Rolle
-            role = channel.guild.get_role(DEADCHAT_ROLE_ID)
+            DEADCHAT_ROLE_ID = 1422570834836455585  # Deadchat Ping Rolle
+            UNDEAD_ROLE_ID = 1430557660478177331     # 👑 Die Rolle, die der nächste Schreiber bekommt (ändern!)
+            deadchat_role = channel.guild.get_role(DEADCHAT_ROLE_ID)
+            undead_role = channel.guild.get_role(UNDEAD_ROLE_ID)
+
             question = get_random_topic()
-            if role:
-                await channel.send(f"{role.mention} 👀 The chat looks pretty quiet... here's a topic: {question}")
+
+            # 📨 Nachricht mit Ping und Hinweis auf Rolle
+            if deadchat_role and undead_role:
+                await channel.send(
+                    f"{deadchat_role.mention} 👀 The chat looks pretty quiet...\n"
+                    f"💬 Here's a topic: **{question}**\n"
+                    f"⚡ The **first person** to answer will get the {undead_role.mention} role!"
+                )
+            elif deadchat_role:
+                await channel.send(
+                    f"{deadchat_role.mention} 👀 The chat looks pretty quiet...\n"
+                    f"💬 Here's a topic: **{question}**"
+                )
             else:
-                await channel.send(f"👀 The chat looks pretty quiet... here's a topic: {question}")
+                await channel.send(
+                    f"👀 The chat looks pretty quiet...\n💬 Here's a topic: **{question}**"
+                )
+
+            def check(msg):
+                return msg.channel.id == channel.id and not msg.author.bot
+
+            try:
+                # ⏳ 120 Sek warten auf Antwort
+                msg = await self.bot.wait_for("message", check=check, timeout=120.0)
+
+                if undead_role:
+                    await msg.author.add_roles(undead_role, reason="First to revive chat")
+                    await channel.send(f"👑 {msg.author.mention} has been crowned as {undead_role.mention}!")
+
+            except asyncio.TimeoutError:
+                await channel.send("⏳ Nobody answered in time… maybe next time 👻")
 
     async def trigger_revive(self):
-        """Manually trigger Deadchat (for !revive command)"""
+        """Manuell triggern mit !revive"""
         await self.send_deadchat_ping()
 
     def update_activity(self):
