@@ -101,7 +101,6 @@ class RPSBo3View(View):
         self.round += 1
         self.choices_this_round = {}
         if self.round > self.max_rounds or max(self.scores.values()) > self.max_rounds // 2:
-            # End result
             if self.scores[self.player] == self.scores[self.bot]:
                 final_text = f"🎯 Tie! Both scored {self.scores[self.player]} points!"
             else:
@@ -133,7 +132,6 @@ class RPSBo3Button(Button):
         self.parent_view.choices_this_round[user] = self.label
         await interaction.response.defer()
 
-        # Bot wählt automatisch
         if self.parent_view.bot not in self.parent_view.choices_this_round:
             self.parent_view.choices_this_round[self.parent_view.bot] = random.choice(list(CHOICES.keys()))
 
