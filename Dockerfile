@@ -1,5 +1,5 @@
 # 1️⃣ Schlankes Basis-Image
-FROM python:3.14-slim
+FROM python:3.12-slim
 
 # 2️⃣ Arbeitsverzeichnis
 WORKDIR /app
