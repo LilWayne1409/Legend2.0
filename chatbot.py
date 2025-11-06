@@ -14,7 +14,7 @@ MONGO_URI = os.environ.get("MONGO_URI")
 
 # === MONGO SETUP ===
 mongo_client = AsyncIOMotorClient(MONGO_URI)
-db = mongo_client["LegendBot"]
+db = mongo_client["sample_mflix"]
 memories = db["memories"]
 
 # === SETTINGS ===
