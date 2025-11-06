@@ -1,16 +1,24 @@
 import os
 import re
-import random
 import aiohttp
+import random
+from motor.motor_asyncio import AsyncIOMotorClient
 from collections import deque
+import discord
 from topic import get_random_topic
 
-# ===== ENV =====
-OPENROUTER_KEY = os.environ.get("OPENROUTER_KEY")
+# === CONFIG ===
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+OPENROUTER_KEY = os.environ.get("OPENROUTER_KEY")
+MONGO_URI = os.environ.get("MONGO_URI")
 
-# ===== MAX CHARS =====
-MAX_CHARS = 200
+# === MONGO SETUP ===
+mongo_client = AsyncIOMotorClient(MONGO_URI)
+db = mongo_client["legend_bot"]
+memories = db["memories"]
+
+# === SETTINGS ===
+MAX_MESSAGE_LENGTH = 200
 
 # ======================
 # Keyword-Response Mapping
@@ -177,9 +185,24 @@ r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b
 }
 
 last_messages = {}
-MAX_MESSAGE_LENGTH = 200
 
-# ---- GPT Fallback ----
+
+# === MEMORY SYSTEM ===
+async def remember(user_id: int, content: str):
+    """Speichert eine Erinnerung."""
+    await memories.insert_one({
+        "user_id": user_id,
+        "content": content
+    })
+
+
+async def recall(user_id: int) -> list[str]:
+    """Ruft Erinnerungen eines Users ab."""
+    docs = await memories.find({"user_id": user_id}).to_list(length=10)
+    return [d["content"] for d in docs]
+
+
+# === GPT FALLBACK ===
 async def gpt_fallback(prompt: str) -> str:
     if not OPENROUTER_KEY:
         return "API key not set!"
@@ -191,12 +214,11 @@ async def gpt_fallback(prompt: str) -> str:
 
     system_prompt = """
 Your name is Legend Bot, talking with Legend on this server. 
-Be polite, friendly, natural, not overly excited. 
+Be polite, friendly, and natural. 
 You can mention being AI casually (“I may be an AI, but that makes me smile 😊”). 
-Answer normally, show empathy when needed. 
-Flirty → 😏, sad → 😭💀, funny → 😂, shocked/awkward → 🫠🫣, respect → 🫡, intense/cool → 🔥, special vibe → ✨. 
-Use emojis sparingly. Stay in character.
-Roleplay is allowed in context, including friendly, flirty, sensual or romantic tones. Stay in character
+Use emojis sparingly. 
+Stay in character: flirty → 😏, sad → 😭💀, funny → 😂, cool → 🔥, etc. 
+Roleplay and emotional tone allowed.
 """
 
     payload = {
@@ -215,11 +237,11 @@ Roleplay is allowed in context, including friendly, flirty, sensual or romantic 
             data = await resp.json()
             try:
                 return data["choices"][0]["message"]["content"]
-            except:
+            except Exception:
                 return "Error reading GPT response"
 
 
-# ---- Keyword Response Funktion ----
+# === Keyword-Response System ===
 def get_keyword_response(message: str, channel_id: int) -> str | None:
     msg = message.lower()
     if channel_id not in last_messages:
@@ -229,32 +251,59 @@ def get_keyword_response(message: str, channel_id: int) -> str | None:
     for pattern, replies in responses.items():
         if re.search(pattern, msg):
             reply = random.choice(replies)
-
             if callable(reply):
                 return reply()
             return reply
-
     return None
 
-# ---- Main Handle Message ----
+
+# === DISCORD MESSAGE HANDLER ===
 async def handle_message(message: "discord.Message"):
     if message.author.bot:
         return
 
+    # Nur reagieren, wenn der Bot erwähnt wird
     if not (message.mentions and message.guild.me in message.mentions):
         return
 
+    user_id = message.author.id
     content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
 
+    # Falls zu lang, kürzen
     if len(content) > MAX_MESSAGE_LENGTH:
         content = content[:MAX_MESSAGE_LENGTH] + "..."
         await message.reply("⚠️ Your message was too long and has been shortened.")
 
+    # Prüfen, ob es ein Keyword-Match gibt
     response = get_keyword_response(content, message.channel.id)
     if response:
         await message.reply(response)
         return
 
-    # ---- GPT Fallback ----
-    gpt_response = await gpt_fallback(content)
-    await message.reply(gpt_response)
+    # Erinnerungen abrufen
+    user_memories = await recall(user_id)
+    memory_context = "\n".join([f"- {m}" for m in user_memories]) if user_memories else "None yet."
+
+    # GPT Prompt zusammenbauen
+    gpt_prompt = f"""
+You are Legend Bot, and you remember facts about this user.
+Known memories:
+{memory_context}
+
+User says: "{content}"
+
+If the user says something new about themselves (like hobbies, favorites, relationships, etc.),
+summarize it briefly in one sentence starting with 'Remember:'.
+Otherwise, reply normally.
+"""
+
+    # Antwort von GPT holen
+    gpt_response = await gpt_fallback(gpt_prompt)
+
+    # Falls GPT eine Erinnerung erkannt hat
+    if gpt_response.lower().startswith("remember:"):
+        memory = gpt_response.replace("Remember:", "").strip()
+        await remember(user_id, memory)
+        await message.reply(f"🧠 Got it! I’ll remember that: {memory}")
+    else:
+        await message.reply(gpt_response)
