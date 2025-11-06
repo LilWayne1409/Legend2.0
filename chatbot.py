@@ -1,24 +1,16 @@
 import os
 import re
-import aiohttp
 import random
-from motor.motor_asyncio import AsyncIOMotorClient
+import aiohttp
 from collections import deque
-import discord
-from topic import get_random_topic
+from topic import get_random_topic  # topic.py import
 
-# === CONFIG ===
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+# ===== ENV =====
 OPENROUTER_KEY = os.environ.get("OPENROUTER_KEY")
-MONGO_URI = os.environ.get("MONGO_URI")
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-# === MONGO SETUP ===
-mongo_client = AsyncIOMotorClient(MONGO_URI)
-db = mongo_client["sample_mflix"]
-memories = db["memories"]
-
-# === SETTINGS ===
-MAX_MESSAGE_LENGTH = 200
+# ===== MAX CHARS pro Nachricht =====
+MAX_CHARS = 200
 
 # ======================
 # Keyword-Response Mapping
@@ -114,15 +106,13 @@ responses = {
         "Honestly? I’d try everything 😂"
     ],
 
-    # ===== Movie =====
     r"\bfavorite movie\b|\bfav movie\b|\bfavorite film\b|\bfav film\b|\bwhat movie\b": [
         "I love The Matrix — classic vibes 😎",
         "Probably Avengers, can’t beat the team-up scenes 💥",
         "I’m a big fan of action movies 🍿",
         "Anything with a good story and explosions 😆"
     ],
-    
-    # ===== show =====
+
     r"\bfavorite tv show\b|\bfav show\b|\bfavorite series\b|\bfav series\b": [
         "I’d say Stranger Things 👻",
         "Probably Breaking Bad, that’s a masterpiece 🧪",
@@ -130,7 +120,6 @@ responses = {
         "I don’t watch TV… but if I did, I’d binge something cool."
     ],
 
-    # ===== Color =====
     r"\bfavorite color\b|\bfav color\b|\bwhat color do you like\b|\bwhat's your favorite colour\b": [
         "Neon blue 💙 — fits my vibe.",
         "Purple 💜 — classy and strong.",
@@ -138,7 +127,6 @@ responses = {
         "I like anything glowing in the dark 😎"
     ],
 
-    # ===== Music =====
     r"\bfavorite music\b|\bfav music\b|\bfavorite song\b|\bfav song\b|\bfavorite band\b|\bfav band\b|\bfavorite artist\b": [
         "I love anything with a good beat 🎶",
         "Probably some chill lo-fi or EDM 🔊",
@@ -146,7 +134,6 @@ responses = {
         "Can’t pick one song, I like too many 😆"
     ],
 
-    # ===== Place =====
     r"\bfavorite place\b|\bfav place\b|\bfavorite country\b|\bfav country\b|\bwhere would you like to live\b": [
         "Tokyo would be awesome to visit 🇯🇵",
         "Somewhere with neon lights ✨",
@@ -154,7 +141,6 @@ responses = {
         "Anywhere with good vibes 😄"
     ],
 
-    # ===== Game =====
 r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b": [
         "Rock Paper Scissors of course 😎",
         "I’d say Minecraft — infinite creativity 🧱",
@@ -162,7 +148,6 @@ r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b
         "I like anything competitive 😏"
     ],
 
-    # ===== hobby =====
     r"\bfavorite hobby\b|\bfav hobby\b|\bwhat do you like to do\b|\bhow do you spend your time\b": [
         "Talking with people like you 😄",
         "Starting random conversations 😎",
@@ -170,7 +155,6 @@ r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b
         "I live for good chats ✨"
     ],
 
-    # ===== animal =====
     r"\bfavorite animal\b|\bfav animal\b|\bwhat's your favorite animal\b": [
         "I like wolves 🐺 — loyal and strong.",
         "Cats are cute 🐱",
@@ -184,25 +168,11 @@ r"\bfavorite game\b|\bfav game\b|\bwhat game do you like\b|\bdo you play games\b
     ]
 }
 
-last_messages = {}
+# ---- Letzte Nachrichten pro Channel speichern ----
+last_messages = {}  # key = channel id, value = deque(maxlen=5)
+MAX_MESSAGE_LENGTH = 200  # Limit pro Nachricht
 
-
-# === MEMORY SYSTEM ===
-async def remember(user_id: int, content: str):
-    """Speichert eine Erinnerung."""
-    await memories.insert_one({
-        "user_id": user_id,
-        "content": content
-    })
-
-
-async def recall(user_id: int) -> list[str]:
-    """Ruft Erinnerungen eines Users ab."""
-    docs = await memories.find({"user_id": user_id}).to_list(length=10)
-    return [d["content"] for d in docs]
-
-
-# === GPT FALLBACK ===
+# ---- GPT Fallback ----
 async def gpt_fallback(prompt: str) -> str:
     if not OPENROUTER_KEY:
         return "API key not set!"
@@ -214,11 +184,12 @@ async def gpt_fallback(prompt: str) -> str:
 
     system_prompt = """
 Your name is Legend Bot, talking with Legend on this server. 
-Be polite, friendly, and natural. 
+Be polite, friendly, natural, not overly excited. 
 You can mention being AI casually (“I may be an AI, but that makes me smile 😊”). 
-Use emojis sparingly. 
-Stay in character: flirty → 😏, sad → 😭💀, funny → 😂, cool → 🔥, etc. 
-Roleplay and emotional tone allowed.
+Answer normally, show empathy when needed. 
+Flirty → 😏, sad → 😭💀, funny → 😂, shocked/awkward → 🫠🫣, respect → 🫡, intense/cool → 🔥, special vibe → ✨. 
+Use emojis sparingly. Stay in character.
+Roleplay is allowed in context, including friendly, flirty, sensual or romantic tones. Stay in character
 """
 
     payload = {
@@ -237,11 +208,11 @@ Roleplay and emotional tone allowed.
             data = await resp.json()
             try:
                 return data["choices"][0]["message"]["content"]
-            except Exception:
+            except:
                 return "Error reading GPT response"
 
 
-# === Keyword-Response System ===
+# ---- Keyword Response Funktion ----
 def get_keyword_response(message: str, channel_id: int) -> str | None:
     msg = message.lower()
     if channel_id not in last_messages:
@@ -251,59 +222,36 @@ def get_keyword_response(message: str, channel_id: int) -> str | None:
     for pattern, replies in responses.items():
         if re.search(pattern, msg):
             reply = random.choice(replies)
+            # Wenn es eine Funktion ist (Lambda z. B. für Topic), dann ausführen
             if callable(reply):
                 return reply()
             return reply
-    return None
 
+    return None  # Kein Keyword → GPT fallback
 
-# === DISCORD MESSAGE HANDLER ===
+# ---- Haupt Handle Message ----
 async def handle_message(message: "discord.Message"):
     if message.author.bot:
         return
 
-    # Nur reagieren, wenn der Bot erwähnt wird
+    # ---- NUR auf Bot-Erwähnung reagieren ----
     if not (message.mentions and message.guild.me in message.mentions):
         return
 
-    user_id = message.author.id
+    # Nachrichteninhalt ohne Bot-Mention
     content = re.sub(f"<@!?{message.guild.me.id}>", "", message.content).strip()
 
-    # Falls zu lang, kürzen
+    # Nachricht kürzen, falls zu lang
     if len(content) > MAX_MESSAGE_LENGTH:
         content = content[:MAX_MESSAGE_LENGTH] + "..."
         await message.reply("⚠️ Your message was too long and has been shortened.")
 
-    # Prüfen, ob es ein Keyword-Match gibt
+    # ---- Keywords prüfen ----
     response = get_keyword_response(content, message.channel.id)
     if response:
         await message.reply(response)
         return
 
-    # Erinnerungen abrufen
-    user_memories = await recall(user_id)
-    memory_context = "\n".join([f"- {m}" for m in user_memories]) if user_memories else "None yet."
-
-    # GPT Prompt zusammenbauen
-    gpt_prompt = f"""
-You are Legend Bot, and you remember facts about this user.
-Known memories:
-{memory_context}
-
-User says: "{content}"
-
-If the user says something new about themselves (like hobbies, favorites, relationships, etc.),
-summarize it briefly in one sentence starting with 'Remember:'.
-Otherwise, reply normally.
-"""
-
-    # Antwort von GPT holen
-    gpt_response = await gpt_fallback(gpt_prompt)
-
-    # Falls GPT eine Erinnerung erkannt hat
-    if gpt_response.lower().startswith("remember:"):
-        memory = gpt_response.replace("Remember:", "").strip()
-        await remember(user_id, memory)
-        await message.reply(f"🧠 Got it! I’ll remember that: {memory}")
-    else:
-        await message.reply(gpt_response)
+    # ---- GPT Fallback ----
+    gpt_response = await gpt_fallback(content)
+    await message.reply(gpt_response)
